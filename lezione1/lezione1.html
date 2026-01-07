@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PyGame Academy – Mission Mode</title>
+
+<style>
+/* ===== BASE ===== */
+body { margin: 0; display: flex; height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; background: #1e1e1e; color: #eee; }
+.sidebar { width: 45%; padding: 20px; background: #111; overflow-y: auto; position: relative; padding-top: 60px; }
+.preview { width: 55%; display: flex; align-items: center; justify-content: center; background: #222; position: relative; }
+
+/* ===== HUD MIGLIORATO ===== */
+.hud {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    background: #000;
+    border: 2px solid #4caf50;
+    padding: 10px 20px;
+    z-index: 100;
+    font-family: Consolas, monospace;
+    font-size: 1.2em;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.score-row { display: flex; align-items: center; gap: 10px; }
+.score-val { color: #fff; font-weight: bold; }
+.score-label { color: #4caf50; }
+.progress-bar {
+    width: 150px;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+    transition: width 0.5s ease;
+    width: 0%;
+}
+.damage-anim { animation: shake 0.5s; border-color: #ff5252; }
+
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-2px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+}
+
+/* ===== CONFETTI ===== */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    z-index: 999;
+    pointer-events: none;
+}
+@keyframes confetti-fall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* ===== TESTI & BLOCCHI ===== */
+h1 { color: #4caf50; margin-top: 0; }
+h2 { 
+    margin-top: 40px; 
+    border-bottom: 1px solid #333; 
+    padding-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.level-badge {
+    font-size: 0.7em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #333;
+    color: #888;
+}
+.level-badge.completed {
+    background: #4caf50;
+    color: #000;
+}
+.level-section {
+    opacity: 0.4;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.level-section.unlocked {
+    opacity: 1;
+    pointer-events: auto;
+}
+.goal { background: #263238; padding: 10px; margin: 10px 0; border-left: 4px solid #4caf50; }
+.constraints { background: #3e2723; padding: 10px; margin: 10px 0; border-left: 4px solid #ff7043; }
+.code { background: #000; padding: 12px; font-family: Consolas, monospace; color: #9cdcfe; margin-top: 10px; line-height: 1.6; border-radius: 4px; }
+.code input { 
+    width: 90px; 
+    background: #1e1e1e; 
+    color: #fff; 
+    border: 1px solid #555; 
+    font-family: Consolas, monospace; 
+    padding: 2px 4px; 
+    border-radius: 2px;
+    transition: all 0.2s;
+}
+.code input:focus { 
+    border-color: #4caf50; 
+    outline: none;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+button { 
+    margin-top: 10px; 
+    padding: 8px 15px; 
+    background: #4caf50; 
+    border: none; 
+    color: #000; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    border-radius: 3px; 
+}
+button:hover { background: #45a049; transform: scale(1.05); }
+button:disabled { background: #555; cursor: default; transform: none; color: #888; }
+.result { margin-top: 8px; font-size: 0.9em; height: 20px; font-weight: bold; }
+.ok { color: #4caf50; }
+.no { color: #ff5252; }
+
+/* ===== HINT MIGLIORATI ===== */
+.hint-box {
+    margin-top: 8px;
+    background: #332b00;
+    color: #ffca28;
+    border: 1px solid #ffca28;
+    padding: 8px;
+    font-size: 0.9em;
+    display: none;
+    border-radius: 4px;
+    animation: fadeIn 0.5s;
+}
+.hint-box.level1 { background: #1a237e; border-color: #7986cb; color: #bbdefb; }
+.hint-box.level2 { background: #332b00; border-color: #ffca28; color: #ffca28; }
+.hint-box.level3 { background: #4a0000; border-color: #ff5252; color: #ffcdd2; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== PREVIEW ===== */
+.window { 
+    width: 600px; 
+    height: 400px; 
+    background: black; 
+    border: 4px solid #333; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: #aaa; 
+    font-family: monospace; 
+    position: relative; 
+    box-shadow: 0 0 20px #000;
+    transition: all 0.5s ease;
+}
+.window.small { width: 400px; height: 300px; }
+.window.pulse { animation: pulse 0.5s; }
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); border-color: #4caf50; }
+}
+.bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; z-index: 1; display: none; }
+.msg { z-index: 2; text-align: center; font-size: 1.1em; text-shadow: 0 2px 2px #000; }
+.circle {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-color: #3f51b5;
+    border-radius: 50%;
+    z-index: 3;
+    display: none; 
+    transition: transform 0.05s linear; 
+    box-shadow: 0 0 20px rgba(63, 81, 181, 0.6);
+}
+
+/* ===== SEZIONE CODICE FINALE ===== */
+#finalCodeSection {
+    margin-top: 50px;
+    padding: 20px;
+    border-top: 2px solid #4caf50;
+    display: none;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border-radius: 8px;
+    animation: slideIn 0.5s ease;
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+#finalCodeSection h2 {
+    color: #4caf50;
+    font-size: 1.5em;
+    border-bottom: none;
+}
+#finalCodeOutput {
+    background: #000;
+    color: #fff;
+    font-family: Consolas, monospace;
+    padding: 15px;
+    white-space: pre;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    border: 1px solid #4caf50;
+}
+.copy-btn {
+    background: #ff7043;
+    color: white;
+    margin-bottom: 20px;
+}
+.copy-btn:hover {
+    background: #e65100;
+}
+.copy-success {
+    color: #4caf50;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+/* ===== INFO ESPANDIBILI ===== */
+.info-expandable {
+    background: #1a1a2e;
+    border-left: 3px solid #4caf50;
+    padding: 8px;
+    margin: 8px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 4px;
+}
+.info-expandable:hover {
+    background: #252540;
+}
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: #4caf50;
+}
+.info-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    color: #aaa;
+    font-size: 0.9em;
+    padding-top: 0;
+}
+.info-content.expanded {
+    max-height: 500px;
+    padding-top: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="hud" id="hudBox">
+    <div class="score-row">
+        <span class="score-label">SCORE:</span>
+        <span class="score-val" id="scoreDisplay">1000</span>
+    </div>
+    <div class="score-row">
+        <span class="score-label" style="font-size: 0.8em;">PROGRESSIONE:</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div style="font-size: 0.7em; color: #888; text-align: center;" id="progressText">0/7 completati</div>
+</div>
+
+<div class="sidebar">
+<h1>🎮 PyGame Academy</h1>
+<p><strong>Missione:</strong> Completa tutti i livelli per sbloccare il codice Python finale e creare il tuo primo gioco!</p>
+
+<div class="info-expandable" onclick="toggleInfo('welcome')">
+    <div class="info-header">
+        💡 Come funziona questo training? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="welcome-info">
+        • Riempi i campi vuoti con il codice corretto<br>
+        • Ogni errore costa <strong>-50 punti</strong><br>
+        • Dopo 3 errori, ricevi un suggerimento automatico<br>
+        • Completa tutti i livelli per ottenere il codice completo!<br>
+        • La finestra a destra mostra cosa succede in tempo reale
+    </div>
+</div>
+
+<section class="level-section unlocked" id="section1">
+<h2>Livello 1 – Avvio <span class="level-badge" id="badge1">🔒</span></h2>
+<div class="goal">🎯 Inizializzare Pygame</div>
+<div class="constraints">⚠️ Import corretto + init</div>
+
+<div class="info-expandable" onclick="toggleInfo('l1')">
+    <div class="info-header">
+        📚 Perché questo passaggio? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l1-info">
+        Pygame è una libreria Python per creare giochi. Prima di usarla, dobbiamo:<br>
+        1. <strong>Importarla</strong> (come aprire una scatola di attrezzi)<br>
+        2. <strong>Inizializzarla</strong> (come accendere gli attrezzi)<br>
+        Senza questi due passaggi, nessuna funzione di Pygame funzionerà!
+    </div>
+</div>
+
+<div class="code">
+import <input id="l1a">
+<br>
+pygame.<input id="l1b">()
+</div>
+<button id="btn1" onclick="check(1)">Verifica</button>
+<div id="r1" class="result"></div>
+<div id="h1" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section2">
+<h2>Livello 2 – Finestra <span class="level-badge" id="badge2">🔒</span></h2>
+<div class="goal">🎯 Aprire una finestra 600×400</div>
+<div class="constraints">ℹ️ Il titolo è libero</div>
+
+<div class="info-expandable" onclick="toggleInfo('l2')">
+    <div class="info-header">
+        📚 Cos'è la finestra di gioco? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l2-info">
+        La finestra è lo "schermo" dove disegni il tuo gioco. Serve:<br>
+        • <strong>LARGHEZZA</strong> e <strong>ALTEZZA</strong> in pixel<br>
+        • <strong>set_mode()</strong> crea la finestra con quelle dimensioni<br>
+        • <strong>set_caption()</strong> imposta il titolo della finestra
+    </div>
+</div>
+
+<div class="code">
+LARGHEZZA = <input id="l2a">
+<br>
+ALTEZZA = <input id="l2b">
+<br><br>
+screen = pygame.display.<input id="l2c">((LARGHEZZA, ALTEZZA))
+<br>
+pygame.display.set_caption("<input id="l2d" style="width:140px" value="My First Game">")
+</div>
+<button id="btn2" onclick="check(2)">Verifica</button>
+<div id="r2" class="result"></div>
+<div id="h2" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section3">
+<h2>Livello 3 – Caricare lo sfondo <span class="level-badge" id="badge3">🔒</span></h2>
+<div class="goal">🎯 Caricare l'immagine in memoria</div>
+<div class="constraints">ℹ️ Il file si chiama <b>background.png</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l3')">
+    <div class="info-header">
+        📚 Caricare vs Disegnare <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l3-info">
+        <strong>Caricare</strong> = Portare l'immagine nella RAM del computer<br>
+        <strong>Disegnare</strong> = Mostrarla sullo schermo<br>
+        Sono due passaggi separati! Prima carichi, poi disegni (livello successivo).
+    </div>
+</div>
+
+<div class="code">
+background = pygame.image.load("<input id="l3a" style="width:140px">")
+</div>
+<button id="btn3" onclick="check(3)">Verifica</button>
+<div id="r3" class="result"></div>
+<div id="h3" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section4">
+<h2>Livello 4 – Disegnare lo sfondo <span class="level-badge" id="badge4">🔒</span></h2>
+<div class="goal">🎯 Disegnare l'immagine sulla finestra</div>
+<div class="constraints">ℹ️ Usa <b>blit</b> e la posizione (0, 0)</div>
+
+<div class="info-expandable" onclick="toggleInfo('l4')">
+    <div class="info-header">
+        📚 Cos'è "blit"? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l4-info">
+        <strong>blit</strong> è il comando per "incollare" un'immagine sullo schermo.<br>
+        Sintassi: <code>screen.blit(immagine, (x, y))</code><br>
+        • (0, 0) = angolo in alto a sinistra<br>
+        • (300, 200) = più verso il centro
+    </div>
+</div>
+
+<div class="code">
+screen.<input id="l4a">(background, (<input id="l4b">, <input id="l4c">))
+</div>
+<button id="btn4" onclick="check(4)">Verifica</button>
+<div id="r4" class="result"></div>
+<div id="h4" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section5">
+<h2>Livello 5 – Loop Infinito <span class="level-badge" id="badge5">🔒</span></h2>
+<div class="goal">🎯 Creare il ciclo di gioco e aggiornare lo schermo</div>
+<div class="constraints">⚠️ Il ciclo è un **while** | Funzioni: **flip()** e **tick(60)**</div>
+
+<div class="info-expandable" onclick="toggleInfo('l5')">
+    <div class="info-header">
+        📚 Perché un loop infinito? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l5-info">
+        I giochi sono programmi che girano continuamente finché non li chiudi.<br>
+        • <strong>while running:</strong> = ripeti finché il gioco è attivo<br>
+        • <strong>flip()</strong> = aggiorna lo schermo con ciò che hai disegnato<br>
+        • <strong>tick(60)</strong> = limita a 60 fotogrammi al secondo (FPS)
+    </div>
+</div>
+
+<div class="code">
+running = True
+<br>
+<input id="l5a" style="width:50px"> <input id="l5b" style="width:80px">:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;# (Gestione eventi qui...)
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;pygame.display.<input id="l5c" style="width:80px">()
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;clock.<input id="l5d" style="width:80px">(60)
+</div>
+<button id="btn5" onclick="check(5)">Verifica</button>
+<div id="r5" class="result"></div>
+<div id="h5" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section6">
+<h2>Livello 6 – Disegnare il Giocatore <span class="level-badge" id="badge6">🔒</span></h2>
+<div class="goal">🎯 Creare un cerchio pieno blu al centro dello schermo</div>
+<div class="constraints">ℹ️ Il blu è (0, 0, 255). Raggio: **25**</div>
+
+<div class="info-expandable" onclick="toggleInfo('l6')">
+    <div class="info-header">
+        📚 Disegnare forme geometriche <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l6-info">
+        Pygame ha funzioni per disegnare forme base:<br>
+        • <strong>pygame.draw.circle()</strong> = cerchi<br>
+        • <strong>pygame.draw.rect()</strong> = rettangoli<br>
+        Sintassi cerchio: <code>pygame.draw.circle(screen, COLORE, (x, y), raggio)</code>
+    </div>
+</div>
+
+<div class="code">
+BLU = (0, 0, 255)
+<br>
+# Posizione: (300, 200)
+<br>
+pygame.<input id="l6a">.<input id="l6b">(screen, BLU, (300, 200), <input id="l6c">)
+</div>
+<button id="btn6" onclick="check(6)">Verifica</button>
+<div id="r6" class="result"></div>
+<div id="h6" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section7">
+<h2>Livello 7 – Gestione degli Eventi <span class="level-badge" id="badge7">🔒</span></h2>
+<div class="goal">🎯 Catturare l'evento "Freccia Sinistra" (per muoversi)</div>
+<div class="constraints">ℹ️ Evento: **KEYDOWN** | Tasto: **K_LEFT**</div>
+
+<div class="info-expandable" onclick="toggleInfo('l7')">
+    <div class="info-header">
+        📚 Come funzionano gli input? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l7-info">
+        Gli "eventi" sono azioni dell'utente (clic, tasti premuti, chiusura).<br>
+        • <strong>pygame.event.get()</strong> = ottiene tutti gli eventi<br>
+        • <strong>KEYDOWN</strong> = un tasto è stato premuto<br>
+        • <strong>K_LEFT</strong> = freccia sinistra<br>
+        Altri tasti: K_RIGHT, K_UP, K_DOWN, K_SPACE...
+    </div>
+</div>
+
+<div class="code">
+for event in pygame.event.get():
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if event.type == pygame.<input id="l7a"> :
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if event.key == pygame.<input id="l7b"> :
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;palla_x -= 5
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;... (altri tasti)
+</div>
+<button id="btn7" onclick="check(7)">Verifica</button>
+<div id="r7" class="result"></div>
+<div id="h7" class="hint-box"></div>
+</section>
+
+<div id="finalCodeSection">
+    <h2>🏆 MISSIONE COMPIUTA!</h2>
+    <p>Hai completato tutti i passaggi. Copia il codice qui sotto e incollalo nel tuo file Python su VS Code (assicurati di avere **background.png** nella stessa cartella).</p>
+    <button class="copy-btn" onclick="copyCode()">📋 Copia Codice Python</button> <span id="copyFeedback" class="copy-success"></span>
+    <pre id="finalCodeOutput"></pre>
+</div>
+
+<div style="height: 50px;"></div>
+</div>
+
+<div class="preview">
+    <div class="window" id="gameWindow">
+        <div class="bg" id="bg"></div>
+        <div class="msg" id="msg">SYSTEM READY<br>In attesa di codice...</div>
+        <div id="playerCircle" class="circle"></div> 
+    </div>
+</div>
+
+<script>
+// STATO DEL GIOCO
+let score = 1000;
+let attempts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
+let completed = { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false };
+
+// VARIABILI DI GIOCO PER SIMULAZIONE
+let circle_x = 300; 
+let circle_y = 200; 
+const CIRCLE_RADIUS = 25;
+const MOVEMENT_SPEED = 15; 
+let playerMoveListener = null;
+
+// HINT A 3 LIVELLI
+const hints = {
+    1: {
+        level1: "💡 Suggerimento: Devi importare la libreria pygame...",
+        level2: "💡 Quasi! Il nome del modulo è 'pygame' e la funzione per inizializzare è 'init'",
+        level3: "💡 Soluzione: import pygame | pygame.init()"
+    },
+    2: {
+        level1: "💡 Suggerimento: La finestra deve essere 600 pixel di larghezza...",
+        level2: "💡 Quasi! LARGHEZZA=600, ALTEZZA=400, la funzione è 'set_mode'",
+        level3: "💡 Soluzione: 600 | 400 | set_mode"
+    },
+    3: {
+        level1: "💡 Suggerimento: Il nome del file termina con .png...",
+        level2: "💡 Quasi! Ricorda le virgolette! Il file è 'background.png'",
+        level3: "💡 Soluzione: background.png"
+    },
+    4: {
+        level1: "💡 Suggerimento: La funzione per 'incollare' inizia con 'bl...'",
+        level2: "💡 Quasi! Funzione: blit | Posizione angolo: (0, 0)",
+        level3: "💡 Soluzione: blit | 0 | 0"
+    },
+    5: {
+        level1: "💡 Suggerimento: Il ciclo è un 'while' che controlla se il gioco è 'running'...",
+        level2: "💡 Quasi! Loop: while running | Funzioni: flip() e tick(60)",
+        level3: "💡 Soluzione: while | running | flip | tick"
+    },
+    6: {
+        level1: "💡 Suggerimento: Si disegna con pygame.draw.qualcosa...",
+        level2: "💡 Quasi! Funzione: draw.circle | Il raggio è 25 pixel",
+        level3: "💡 Soluzione: draw | circle | 25"
+    },
+    7: {
+        level1: "💡 Suggerimento: L'evento per tastiera premuta è KEY...",
+        level2: "💡 Quasi! Evento: KEYDOWN | Tasto freccia sinistra: K_LEFT",
+        level3: "💡 Soluzione: KEYDOWN | K_LEFT"
+    }
+};
+
+// Toggle info espandibili
+function toggleInfo(id) {
+    const content = document.getElementById(id + '-info');
+    content.classList.toggle('expanded');
+}
+
+// Aggiorna barra progressione
+function updateProgress() {
+    const total = 7;
+    const completedCount = Object.values(completed).filter(v => v).length;
+    const percentage = (completedCount / total) * 100;
+    
+    document.getElementById('progressFill').style.width = percentage + '%';
+    document.getElementById('progressText').innerText = `${completedCount}/${total} completati`;
+}
+
+// Funzione aggiornamento punteggio
+function updateScore(amount) {
+    score += amount;
+    if (score < 0) score = 0;
+    
+    const display = document.getElementById("scoreDisplay");
+    const hud = document.getElementById("hudBox");
+    
+    display.innerText = score;
+    
+    if (amount < 0) {
+        hud.classList.remove("damage-anim");
+        void hud.offsetWidth;
+        hud.classList.add("damage-anim");
+    }
+}
+
+// Confetti quando completa un livello
+function createConfetti() {
+    const colors = ['#4caf50', '#ffeb3b', '#2196f3', '#ff5722', '#9c27b0'];
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * window.innerWidth + 'px';
+            confetti.style.top = '-10px';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animation = `confetti-fall ${2 + Math.random()}s linear forwards`;
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => confetti.remove(), 3000);
+        }, i * 30);
+    }
+}
+
+// Funzione per mostrare suggerimento progressivo
+function showHint(level) {
+    const hintEl = document.getElementById("h" + level);
+    const attemptCount = attempts[level];
+    
+    let hintText;
+    if (attemptCount === 1) {
+        hintText = hints[level].level1;
+        hintEl.className = "hint-box level1";
+    } else if (attemptCount === 2) {
+        hintText = hints[level].level2;
+        hintEl.className = "hint-box level2";
+    } else {
+        hintText = hints[level].level3;
+        hintEl.className = "hint-box level3";
+    }
+    
+    hintEl.innerText = hintText;
+    hintEl.style.display = "block";
+    
+    setTimeout(() => {
+        hintEl.style.display = "none";
+    }, 6000);
+}
+
+function updateCirclePosition() {
+    const playerCircle = document.getElementById("playerCircle");
+    const halfRadius = CIRCLE_RADIUS;
+    
+    circle_x = Math.min(Math.max(circle_x, halfRadius), 600 - halfRadius);
+    circle_y = Math.min(Math.max(circle_y, halfRadius), 400 - halfRadius);
+    
+    playerCircle.style.transform = `translate(${circle_x - halfRadius}px, ${circle_y - halfRadius}px)`;
+}
+
+function enablePlayerMovement() {
+    if (playerMoveListener) {
+        document.removeEventListener('keydown', playerMoveListener);
+    }
+
+    playerMoveListener = function(e) {
+        let moved = false;
+        
+        if (e.key === 'ArrowLeft') {
+            circle_x -= MOVEMENT_SPEED;
+            moved = true;
+        } else if (e.key === 'ArrowRight') {
+            circle_x += MOVEMENT_SPEED;
+            moved = true;
+        } else if (e.key === 'ArrowUp') {
+            circle_y -= MOVEMENT_SPEED;
+            moved = true;
+        } else if (e.key === 'ArrowDown') {
+            circle_y += MOVEMENT_SPEED;
+            moved = true;
+        }
+        
+        if (moved) {
+            e.preventDefault(); 
+            updateCirclePosition();
+        }
+    };
+
+    document.addEventListener('keydown', playerMoveListener);
+    updateCirclePosition(); 
+}
+
+function unlockNextLevel(level) {
+    if (level < 7) {
+        const nextSection = document.getElementById('section' + (level + 1));
+        nextSection.classList.add('unlocked');
+        
+        setTimeout(() => {
+            nextSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 500);
+    }
+}
+
+function checkAllCompleted() {
+    const allCompleted = Object.values(completed).every(status => status === true);
+    
+    if (allCompleted) {
+        document.getElementById("finalCodeSection").style.display = 'block';
+        generatePythonCode();
+        
+        setTimeout(() => {
+            document.getElementById("finalCodeSection").scrollIntoView({ behavior: 'smooth' });
+        }, 1000);
+    }
+}
+
+function generatePythonCode() {
+    const title = document.getElementById("l2d").value.trim() || "My First Game";
+    
+    const code = `# PyGame Academy - Codice generato
+# Autore: ${title}
+
+import pygame
+
+# 1. Inizializzazione
+pygame.init()
+clock = pygame.time.Clock()
+
+# 2. Setup Finestra
+LARGHEZZA = 600
+ALTEZZA = 400
+screen = pygame.display.set_mode((LARGHEZZA, ALTEZZA))
+pygame.display.set_caption("${title}")
+
+# 3. e 4. Caricamento e Posizione iniziale
+background = pygame.image.load("background.png")
+palla_x = LARGHEZZA // 2   # Posizione iniziale X (centro)
+palla_y = ALTEZZA // 2     # Posizione iniziale Y (centro)
+BLU = (0, 0, 255)
+VELOCITA = 5
+
+# 5. Loop di gioco
+running = True
+while running:
+    
+    # 7. Gestione degli Eventi (Input)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                palla_x -= VELOCITA
+            if event.key == pygame.K_RIGHT:
+                palla_x += VELOCITA
+            if event.key == pygame.K_UP:
+                palla_y -= VELOCITA
+            if event.key == pygame.K_DOWN:
+                palla_y += VELOCITA
+    
+    # Mantenere il cerchio sullo schermo
+    palla_x = max(25, min(palla_x, LARGHEZZA - 25))
+    palla_y = max(25, min(palla_y, ALTEZZA - 25))
+
+    # 4. Disegno dello Sfondo (deve essere prima del cerchio)
+    screen.blit(background, (0, 0))
+    
+    # 6. Disegno del Cerchio (Giocatore)
+    pygame.draw.circle(screen, BLU, (palla_x, palla_y), 25)
+    
+    # Aggiornamento schermo e FPS
+    pygame.display.flip()
+    clock.tick(60)
+
+# Uscita
+pygame.quit()`;
+    
+    document.getElementById("finalCodeOutput").innerText = code.trim();
+}
+
+function copyCode() {
+    const codeText = document.getElementById("finalCodeOutput").innerText;
+    const feedback = document.getElementById("copyFeedback");
+    
+    navigator.clipboard.writeText(codeText).then(() => {
+        feedback.innerText = "✅ COPIATO!";
+        setTimeout(() => feedback.innerText = "", 2000);
+    }).catch(err => {
+        console.error('Errore nella copia: ', err);
+        feedback.innerText = "❌ Errore nella copia!";
+    });
+}
+
+// Funzione unificata di controllo
+function check(level) {
+    if (completed[level]) return;
+
+    let ok = false;
+    let resultDiv = document.getElementById("r" + level);
+    
+    const msg = document.getElementById("msg");
+    const bg = document.getElementById("bg");
+    const gameWindow = document.getElementById("gameWindow");
+    const playerCircle = document.getElementById("playerCircle");
+    
+    if (level === 1) {
+        ok = document.getElementById("l1a").value.trim() === "pygame" && 
+             document.getElementById("l1b").value.trim() === "init";
+        if(ok) msg.innerText = ">> Modulo Pygame caricato.";
+    } 
+    else if (level === 2) {
+        ok = document.getElementById("l2a").value.trim() == "600" && 
+             document.getElementById("l2b").value.trim() == "400" && 
+             document.getElementById("l2c").value.trim() === "set_mode";
+        if(ok) {
+            gameWindow.classList.remove("small");
+            gameWindow.classList.add("pulse");
+            setTimeout(() => gameWindow.classList.remove("pulse"), 500);
+            msg.innerText = ">> Finestra inizializzata (600x400) e titolo impostato.";
+        }
+    }
+    else if (level === 3) {
+        ok = document.getElementById("l3a").value.trim() === "background.png"; 
+        if(ok) msg.innerText = ">> Asset caricato in RAM (background.png).";
+    }
+    else if (level === 4) {
+        ok = document.getElementById("l4a").value.trim() === "blit" && 
+             document.getElementById("l4b").value.trim() == "0" && 
+             document.getElementById("l4c").value.trim() == "0";
+        if(ok) {
+            bg.style.backgroundImage = "url('background.png')"; 
+            bg.style.display = "block";
+            msg.innerText = ">> Sfondo disegnato (simulazione).";
+        }
+    }
+    else if (level === 5) {
+        ok = document.getElementById("l5a").value.trim() === "while" &&
+             document.getElementById("l5b").value.trim() === "running" &&
+             document.getElementById("l5c").value.trim() === "flip" &&
+             document.getElementById("l5d").value.trim() === "tick";
+        if(ok) msg.innerText = ">> Ciclo di gioco simulato (60 FPS) in attesa.";
+    }
+    else if (level === 6) {
+        ok = document.getElementById("l6a").value.trim() === "draw" &&
+             document.getElementById("l6b").value.trim() === "circle" &&
+             document.getElementById("l6c").value.trim() == "25";
+        if(ok) {
+            playerCircle.style.display = 'block';
+            updateCirclePosition(); 
+            msg.innerText = ">> Cerchio disegnato (Giocatore).";
+        }
+    }
+    else if (level === 7) {
+        ok = document.getElementById("l7a").value.trim() === "KEYDOWN" &&
+             document.getElementById("l7b").value.trim() === "K_LEFT";
+        if(ok) {
+            msg.innerText = ">> Ascolto Eventi e Movimento ATTIVO. Prova le frecce! ⬅️➡️⬆️⬇️";
+            enablePlayerMovement(); 
+        }
+    }
+
+    if (ok) {
+        resultDiv.innerHTML = "✅ LIVELLO COMPLETATO";
+        resultDiv.className = "result ok";
+        completed[level] = true;
+        document.getElementById("btn" + level).disabled = true;
+        document.getElementById("h" + level).style.display = "none";
+        
+        // Aggiorna badge
+        const badge = document.getElementById("badge" + level);
+        badge.innerText = "✅";
+        badge.classList.add("completed");
+        
+        // Effetti di successo
+        createConfetti();
+        updateProgress();
+        unlockNextLevel(level);
+        
+        checkAllCompleted();
+    } else {
+        updateScore(-50);
+        attempts[level]++;
+        
+        if (attempts[level] <= 3) {
+            resultDiv.innerHTML = `❌ ERRORE (-50 pt). Suggerimento dopo ${4 - attempts[level]} tentativi.`;
+            showHint(level);
+        } else {
+            resultDiv.innerHTML = `❌ ERRORE (-50 pt). Controlla il suggerimento!`;
+            showHint(level);
+        }
+        resultDiv.className = "result no";
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateCirclePosition();
+    updateProgress();
+});
+// ============================================
+// CODICE DA AGGIUNGERE ALLA FINE DELLO SCRIPT DI OGNI LEZIONE
+// Inserisci questo DOPO tutte le altre funzioni
+// ============================================
+
+// MODIFICA la funzione checkAllCompleted esistente con questa:
+function checkAllCompleted() {
+    const allCompleted = Object.values(completed).every(status => status === true);
+    
+    if (allCompleted) {
+        document.getElementById("finalCodeSection").style.display = 'block';
+        generatePythonCode();
+        
+        // ===== NUOVO CODICE PER SALVARE IL COMPLETAMENTO =====
+        const LESSON_ID = 1;  // ⚠️ CAMBIA QUESTO: 1 per lezione1, 2 per lezione2, ecc.
+        
+        const completionData = {
+            lessonId: LESSON_ID,
+            score: score,  // variabile già esistente nella lezione
+            attempts: Object.values(attempts).reduce((sum, val) => sum + val, 0),
+            completedAt: new Date().toISOString()
+        };
+        
+        // Salva nel sessionStorage
+        sessionStorage.setItem('lesson_completion', JSON.stringify(completionData));
+        
+        // Mostra messaggio di successo
+        setTimeout(() => {
+            const goBack = confirm(
+                `🎉 Complimenti! Hai completato la lezione!\n\n` +
+                `🏆 Punteggio finale: ${score}/1000\n\n` +
+                `Clicca OK per tornare al portale e sbloccare la prossima lezione.`
+            );
+            
+            if (goBack) {
+                window.location.href = '../index.html';  // Torna al portale
+            }
+        }, 1000);
+        // ===== FINE NUOVO CODICE =====
+        
+        setTimeout(() => {
+            document.getElementById("finalCodeSection").scrollIntoView({ behavior: 'smooth' });
+        }, 1500);
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PyGame Academy – Lezione 3: Labirinto e IA</title>
+
+<style>
+/* ===== BASE ===== */
+body { margin: 0; display: flex; height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; background: #1e1e1e; color: #eee; }
+.sidebar { width: 45%; padding: 20px; background: #111; overflow-y: auto; position: relative; padding-top: 60px; }
+.preview { width: 55%; display: flex; align-items: center; justify-content: center; background: #222; position: relative; }
+
+/* ===== HUD ===== */
+.hud {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    background: #000;
+    border: 2px solid #9c27b0;
+    padding: 10px 20px;
+    z-index: 100;
+    font-family: Consolas, monospace;
+    font-size: 1.2em;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(156, 39, 176, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.score-row { display: flex; align-items: center; gap: 10px; }
+.score-val { color: #fff; font-weight: bold; }
+.score-label { color: #9c27b0; }
+.progress-bar {
+    width: 150px;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #9c27b0, #e1bee7);
+    transition: width 0.5s ease;
+    width: 0%;
+}
+.damage-anim { animation: shake 0.5s; border-color: #ff5252; }
+
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-2px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+}
+
+/* ===== CONFETTI ===== */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    z-index: 999;
+    pointer-events: none;
+}
+@keyframes confetti-fall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* ===== TESTI & BLOCCHI ===== */
+h1 { color: #9c27b0; margin-top: 0; }
+h2 { 
+    margin-top: 40px; 
+    border-bottom: 1px solid #333; 
+    padding-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.level-badge {
+    font-size: 0.7em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #333;
+    color: #888;
+}
+.level-badge.completed {
+    background: #9c27b0;
+    color: #fff;
+}
+.level-section {
+    opacity: 0.4;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.level-section.unlocked {
+    opacity: 1;
+    pointer-events: auto;
+}
+.goal { background: #263238; padding: 10px; margin: 10px 0; border-left: 4px solid #9c27b0; }
+.constraints { background: #3e2723; padding: 10px; margin: 10px 0; border-left: 4px solid #ff7043; }
+.code { background: #000; padding: 12px; font-family: Consolas, monospace; color: #9cdcfe; margin-top: 10px; line-height: 1.6; border-radius: 4px; }
+.code input { 
+    width: 90px; 
+    background: #1e1e1e; 
+    color: #fff; 
+    border: 1px solid #555; 
+    font-family: Consolas, monospace; 
+    padding: 2px 4px; 
+    border-radius: 2px;
+    transition: all 0.2s;
+}
+.code input:focus { 
+    border-color: #9c27b0; 
+    outline: none;
+    box-shadow: 0 0 5px rgba(156, 39, 176, 0.3);
+}
+button { 
+    margin-top: 10px; 
+    padding: 8px 15px; 
+    background: #9c27b0; 
+    border: none; 
+    color: #fff; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    border-radius: 3px; 
+}
+button:hover { background: #7b1fa2; transform: scale(1.05); }
+button:disabled { background: #555; cursor: default; transform: none; color: #888; }
+.result { margin-top: 8px; font-size: 0.9em; height: 20px; font-weight: bold; }
+.ok { color: #9c27b0; }
+.no { color: #ff5252; }
+
+/* ===== HINT ===== */
+.hint-box {
+    margin-top: 8px;
+    background: #332b00;
+    color: #ffca28;
+    border: 1px solid #ffca28;
+    padding: 8px;
+    font-size: 0.9em;
+    display: none;
+    border-radius: 4px;
+    animation: fadeIn 0.5s;
+}
+.hint-box.level1 { background: #1a237e; border-color: #7986cb; color: #bbdefb; }
+.hint-box.level2 { background: #332b00; border-color: #ffca28; color: #ffca28; }
+.hint-box.level3 { background: #4a0000; border-color: #ff5252; color: #ffcdd2; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== PREVIEW ===== */
+.window { 
+    width: 600px; 
+    height: 600px; 
+    background: black; 
+    border: 4px solid #333; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: #aaa; 
+    font-family: monospace; 
+    position: relative; 
+    box-shadow: 0 0 20px #000;
+    transition: all 0.5s ease;
+}
+.window.pulse { animation: pulse 0.5s; }
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); border-color: #9c27b0; }
+}
+.bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+.msg { z-index: 2; text-align: center; font-size: 1.1em; text-shadow: 0 2px 2px #000; }
+
+/* CANVAS */
+#gameCanvas {
+    display: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* ===== SEZIONE CODICE FINALE ===== */
+#finalCodeSection {
+    margin-top: 50px;
+    padding: 20px;
+    border-top: 2px solid #9c27b0;
+    display: none;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border-radius: 8px;
+    animation: slideIn 0.5s ease;
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+#finalCodeSection h2 {
+    color: #9c27b0;
+    font-size: 1.5em;
+    border-bottom: none;
+}
+#finalCodeOutput {
+    background: #000;
+    color: #fff;
+    font-family: Consolas, monospace;
+    padding: 15px;
+    white-space: pre;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    border: 1px solid #9c27b0;
+}
+.copy-btn {
+    background: #ff7043;
+    color: white;
+    margin-bottom: 20px;
+}
+.copy-btn:hover {
+    background: #e65100;
+}
+.copy-success {
+    color: #9c27b0;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+/* ===== INFO ESPANDIBILI ===== */
+.info-expandable {
+    background: #1a1a2e;
+    border-left: 3px solid #9c27b0;
+    padding: 8px;
+    margin: 8px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 4px;
+}
+.info-expandable:hover {
+    background: #252540;
+}
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: #9c27b0;
+}
+.info-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    color: #aaa;
+    font-size: 0.9em;
+    padding-top: 0;
+}
+.info-content.expanded {
+    max-height: 500px;
+    padding-top: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="hud" id="hudBox">
+    <div class="score-row">
+        <span class="score-label">SCORE:</span>
+        <span class="score-val" id="scoreDisplay">1000</span>
+    </div>
+    <div class="score-row">
+        <span class="score-label" style="font-size: 0.8em;">PROGRESSIONE:</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div style="font-size: 0.7em; color: #888; text-align: center;" id="progressText">0/8 completati</div>
+</div>
+
+<div class="sidebar">
+<h1>🎮 PyGame Academy - Lezione 3</h1>
+<p><strong>Tema:</strong> Labirinti con matrici, IA nemica con pathfinding e sistema vite!</p>
+
+<div class="info-expandable" onclick="toggleInfo('welcome')">
+    <div class="info-header">
+        💡 Cosa imparerai in questa lezione? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="welcome-info">
+        • <strong>Matrici 2D</strong> - Creare labirinti con liste di liste<br>
+        • <strong>Ridimensionamento</strong> - Scalare sprite alle dimensioni delle celle<br>
+        • <strong>Pathfinding AI</strong> - Algoritmo del percorso più breve<br>
+        • <strong>Sistema Vite</strong> - Gestire la salute del giocatore<br>
+        • <strong>Collisioni Avanzate</strong> - Con muri e nemici<br>
+        Un vero gioco completo sta prendendo forma!
+    </div>
+</div>
+
+<section class="level-section unlocked" id="section1">
+<h2>Livello 1 – Matrice Labirinto <span class="level-badge" id="badge1">🔒</span></h2>
+<div class="goal">🎯 Creare una matrice 2D per rappresentare il labirinto</div>
+<div class="constraints">⚠️ 0 = cella vuota, 1 = muro</div>
+
+<div class="info-expandable" onclick="toggleInfo('l1')">
+    <div class="info-header">
+        📚 Cos'è una matrice 2D? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l1-info">
+        Una <strong>matrice</strong> è una lista di liste! Perfetta per rappresentare una griglia:<br>
+        • Ogni riga è una lista<br>
+        • Ogni elemento rappresenta una cella<br>
+        • <code>maze[riga][colonna]</code> per accedere<br>
+        <br>
+        Esempio 3x3:<br>
+        <code>[[1,1,1],<br>
+        &nbsp;[1,0,1],<br>
+        &nbsp;[1,1,1]]</code><br>
+        Questo crea un bordo di muri (1) con centro vuoto (0).
+    </div>
+</div>
+
+<div class="code">
+maze = [
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<input id="l1a" style="width:250px" placeholder="[1,1,1,1,1,...]">
+<br>
+]
+</div>
+<button id="btn1" onclick="check(1)">Verifica</button>
+<div id="r1" class="result"></div>
+<div id="h1" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section2">
+<h2>Livello 2 – Dimensione Celle <span class="level-badge" id="badge2">🔒</span></h2>
+<div class="goal">🎯 Calcolare la dimensione delle celle in base allo schermo</div>
+<div class="constraints">ℹ️ Usa <b>LARGHEZZA // numero_colonne</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l2')">
+    <div class="info-header">
+        📚 Dividere lo schermo in griglia <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l2-info">
+        Se hai uno schermo 600x600 e un labirinto 12x12:<br>
+        • Larghezza cella = 600 // 12 = 50 pixel<br>
+        • Usa <strong>//</strong> (divisione intera) non <strong>/</strong><br>
+        • <code>len(maze[0])</code> = numero colonne<br>
+        • <code>len(maze)</code> = numero righe
+    </div>
+</div>
+
+<div class="code">
+CELL_SIZE = LARGHEZZA <input id="l2a" style="width:30px"> len(maze[<input id="l2b" style="width:20px">])
+</div>
+<button id="btn2" onclick="check(2)">Verifica</button>
+<div id="r2" class="result"></div>
+<div id="h2" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section3">
+<h2>Livello 3 – Disegnare il Labirinto <span class="level-badge" id="badge3">🔒</span></h2>
+<div class="goal">🎯 Iterare la matrice e disegnare i muri</div>
+<div class="constraints">ℹ️ Doppio ciclo for: <b>for row in range(...) for col in range(...)</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l3')">
+    <div class="info-header">
+        📚 Iterare una matrice <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l3-info">
+        Per ogni cella della matrice:<br>
+        1. Ciclo esterno: scorre le righe<br>
+        2. Ciclo interno: scorre le colonne<br>
+        3. Se <code>maze[row][col] == 1</code> → disegna muro<br>
+        4. Posizione pixel: <code>x = col * CELL_SIZE, y = row * CELL_SIZE</code>
+    </div>
+</div>
+
+<div class="code">
+for row in <input id="l3a" style="width:120px">(len(maze)):
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;for col in range(len(maze[<input id="l3b" style="width:30px">])):
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if maze[row][col] == <input id="l3c" style="width:20px">:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = col * CELL_SIZE
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y = row * CELL_SIZE
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pygame.draw.rect(screen, GRIGIO, (x, y, CELL_SIZE, CELL_SIZE))
+</div>
+<button id="btn3" onclick="check(3)">Verifica</button>
+<div id="r3" class="result"></div>
+<div id="h3" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section4">
+<h2>Livello 4 – Ridimensionare Sprite <span class="level-badge" id="badge4">🔒</span></h2>
+<div class="goal">🎯 Scalare Pac-Man e il fantasma alle dimensioni della cella</div>
+<div class="constraints">ℹ️ Usa <b>pygame.transform.scale(img, (width, height))</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l4')">
+    <div class="info-header">
+        📚 Ridimensionare le immagini <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l4-info">
+        Gli sprite devono adattarsi alla griglia!<br>
+        • <code>pygame.transform.scale(img, (nuova_w, nuova_h))</code><br>
+        • Ridimensiona PRIMA del game loop (non dentro!)<br>
+        • Esempio: <code>scale(pacman_img, (CELL_SIZE, CELL_SIZE))</code><br>
+        Così Pac-Man e il fantasma si adattano perfettamente alle celle.
+    </div>
+</div>
+
+<div class="code">
+pacman_scaled = pygame.transform.<input id="l4a">(pacman_img, (<input id="l4b">, CELL_SIZE))
+<br>
+ghost_scaled = pygame.transform.scale(ghost_img, (CELL_SIZE, CELL_SIZE))
+</div>
+<button id="btn4" onclick="check(4)">Verifica</button>
+<div id="r4" class="result"></div>
+<div id="h4" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section5">
+<h2>Livello 5 – Collisione con Muri <span class="level-badge" id="badge5">🔒</span></h2>
+<div class="goal">🎯 Impedire al giocatore di attraversare i muri</div>
+<div class="constraints">⚠️ Controlla se <b>maze[grid_y][grid_x] == 1</b> prima di muoverti</div>
+
+<div class="info-expandable" onclick="toggleInfo('l5')">
+    <div class="info-header">
+        📚 Da pixel a coordinate griglia <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l5-info">
+        Per sapere in quale cella si trova il giocatore:<br>
+        • <code>grid_x = player_x // CELL_SIZE</code><br>
+        • <code>grid_y = player_y // CELL_SIZE</code><br>
+        <br>
+        Prima di muoverti, calcola la NUOVA posizione:<br>
+        • <code>new_x = player_x + vel_x</code><br>
+        • <code>new_grid_x = new_x // CELL_SIZE</code><br>
+        • Se <code>maze[new_grid_y][new_grid_x] == 0</code> → OK, muoviti!
+    </div>
+</div>
+
+<div class="code">
+new_x = player_x + vel_x
+<br>
+new_y = player_y + vel_y
+<br>
+grid_x = new_x <input id="l5a" style="width:30px"> CELL_SIZE
+<br>
+grid_y = new_y // CELL_SIZE
+<br><br>
+if maze[<input id="l5b" style="width:60px">][grid_x] == <input id="l5c" style="width:20px">:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;player_x = new_x
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;player_y = new_y
+</div>
+<button id="btn5" onclick="check(5)">Verifica</button>
+<div id="r5" class="result"></div>
+<div id="h5" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section6">
+<h2>Livello 6 – Pathfinding BFS <span class="level-badge" id="badge6">🔒</span></h2>
+<div class="goal">🎯 Usare BFS per trovare il percorso più breve verso il giocatore</div>
+<div class="constraints">ℹ️ BFS usa una <b>coda (queue)</b> e <b>visited set</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l6')">
+    <div class="info-header">
+        📚 Cos'è il BFS (Breadth-First Search)? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l6-info">
+        <strong>BFS</strong> trova il percorso più breve in una griglia:<br>
+        1. Inizia dalla posizione del fantasma<br>
+        2. Esplora tutte le celle vicine (su, giù, sx, dx)<br>
+        3. Segna le celle già visitate<br>
+        4. Continua finché non trova il giocatore<br>
+        5. Ricostruisci il percorso all'indietro<br>
+        <br>
+        Usiamo <code>collections.deque</code> come coda per efficienza.
+    </div>
+</div>
+
+<div class="code">
+from collections import <input id="l6a">
+<br><br>
+def bfs_pathfinding(maze, start, goal):
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;queue = deque([<input id="l6b">])
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;visited = <input id="l6c" style="width:100px">(start)
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;# ... logica BFS
+</div>
+<button id="btn6" onclick="check(6)">Verifica</button>
+<div id="r6" class="result"></div>
+<div id="h6" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section7">
+<h2>Livello 7 – Sistema Vite <span class="level-badge" id="badge7">🔒</span></h2>
+<div class="goal">🎯 Gestire le vite del giocatore e collisione con fantasma</div>
+<div class="constraints">ℹ️ Usa <b>distance</b> per rilevare collisione</div>
+
+<div class="info-expandable" onclick="toggleInfo('l7')">
+    <div class="info-header">
+        📚 Distanza tra due punti <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l7-info">
+        Per sapere se Pac-Man tocca il fantasma:<br>
+        • Calcola distanza: <code>math.sqrt((x1-x2)**2 + (y1-y2)**2)</code><br>
+        • Oppure usa: <code>abs(x1-x2) + abs(y1-y2)</code> (Manhattan)<br>
+        • Se distanza < CELL_SIZE → collisione!<br>
+        <br>
+        Quando c'è collisione:<br>
+        • Togli una vita<br>
+        • Riposiziona il giocatore all'inizio<br>
+        • Se vite == 0 → Game Over
+    </div>
+</div>
+
+<div class="code">
+import <input id="l7a">
+<br><br>
+lives = <input id="l7b" style="width:20px">
+<br><br>
+dist = math.<input id="l7c">((player_x - ghost_x)**2 + (player_y - ghost_y)**2)
+<br>
+if dist < CELL_SIZE:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;lives -= 1
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;# Respawn giocatore
+</div>
+<button id="btn7" onclick="check(7)">Verifica</button>
+<div id="r7" class="result"></div>
+<div id="h7" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section8">
+<h2>Livello 8 – Movimento IA <span class="level-badge" id="badge8">🔒</span></h2>
+<div class="goal">🎯 Far muovere il fantasma lungo il percorso trovato</div>
+<div class="constraints">⚠️ Muovi verso path[<b>1</b>] non path[0] (che è la posizione attuale)</div>
+
+<div class="info-expandable" onclick="toggleInfo('l8')">
+    <div class="info-header">
+        📚 Seguire il percorso <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l8-info">
+        Il BFS restituisce una lista di coordinate:<br>
+        • <code>path[0]</code> = posizione attuale del fantasma<br>
+        • <code>path[1]</code> = prossima cella dove andare<br>
+        • <code>path[-1]</code> = destinazione (giocatore)<br>
+        <br>
+        Muovi il fantasma verso path[1]:<br>
+        • Se <code>next_x > ghost_x</code> → muovi destra<br>
+        • Se <code>next_x < ghost_x</code> → muovi sinistra<br>
+        • Stesso per y (su/giù)
+    </div>
+</div>
+
+<div class="code">
+if len(path) > <input id="l8a" style="width:20px">:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;next_pos = path[<input id="l8b" style="width:20px">]
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target_x = next_pos[<input id="l8c" style="width:20px">] * CELL_SIZE
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target_y = next_pos[1] * CELL_SIZE
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if ghost_x < target_x: ghost_x += ghost_speed
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;elif ghost_x > target_x: ghost_x -= ghost_speed
+</div>
+<button id="btn8" onclick="check(8)">Verifica</button>
+<div id="r8" class="result"></div>
+<div id="h8" class="hint-box"></div>
+</section>
+
+<div id="finalCodeSection">
+    <h2>🏆 LEZIONE 3 COMPLETATA!</h2>
+    <p>Incredibile! Hai creato un gioco con IA, labirinto e sistema vite. Copia il codice completo:</p>
+    <button class="copy-btn" onclick="copyCode()">📋 Copia Codice Python</button> <span id="copyFeedback" class="copy-success"></span>
+    <pre id="finalCodeOutput"></pre>
+</div>
+
+<div style="height: 50px;"></div>
+</div>
+
+<div class="preview">
+    <div class="window" id="gameWindow">
+        <div class="bg" id="bg"></div>
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div class="msg" id="msg">SYSTEM READY<br>Completa i livelli per giocare!</div>
+    </div>
+</div>
+
+<script src="lezione3_script.js">
+
+</script>
+
+</body>
+</html>

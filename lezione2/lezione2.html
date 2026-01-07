@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PyGame Academy – Lezione 2: Pac-Man</title>
+
+<style>
+/* ===== BASE ===== */
+body { margin: 0; display: flex; height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; background: #1e1e1e; color: #eee; }
+.sidebar { width: 45%; padding: 20px; background: #111; overflow-y: auto; position: relative; padding-top: 60px; }
+.preview { width: 55%; display: flex; align-items: center; justify-content: center; background: #222; position: relative; }
+
+/* ===== HUD ===== */
+.hud {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    background: #000;
+    border: 2px solid #ffeb3b;
+    padding: 10px 20px;
+    z-index: 100;
+    font-family: Consolas, monospace;
+    font-size: 1.2em;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.score-row { display: flex; align-items: center; gap: 10px; }
+.score-val { color: #fff; font-weight: bold; }
+.score-label { color: #ffeb3b; }
+.progress-bar {
+    width: 150px;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffeb3b, #ffc107);
+    transition: width 0.5s ease;
+    width: 0%;
+}
+.damage-anim { animation: shake 0.5s; border-color: #ff5252; }
+
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-2px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+}
+
+/* ===== CONFETTI ===== */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    z-index: 999;
+    pointer-events: none;
+}
+@keyframes confetti-fall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* ===== TESTI & BLOCCHI ===== */
+h1 { color: #ffeb3b; margin-top: 0; }
+h2 { 
+    margin-top: 40px; 
+    border-bottom: 1px solid #333; 
+    padding-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.level-badge {
+    font-size: 0.7em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #333;
+    color: #888;
+}
+.level-badge.completed {
+    background: #ffeb3b;
+    color: #000;
+}
+.level-section {
+    opacity: 0.4;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.level-section.unlocked {
+    opacity: 1;
+    pointer-events: auto;
+}
+.goal { background: #263238; padding: 10px; margin: 10px 0; border-left: 4px solid #ffeb3b; }
+.constraints { background: #3e2723; padding: 10px; margin: 10px 0; border-left: 4px solid #ff7043; }
+.code { background: #000; padding: 12px; font-family: Consolas, monospace; color: #9cdcfe; margin-top: 10px; line-height: 1.6; border-radius: 4px; }
+.code input { 
+    width: 90px; 
+    background: #1e1e1e; 
+    color: #fff; 
+    border: 1px solid #555; 
+    font-family: Consolas, monospace; 
+    padding: 2px 4px; 
+    border-radius: 2px;
+    transition: all 0.2s;
+}
+.code input:focus { 
+    border-color: #ffeb3b; 
+    outline: none;
+    box-shadow: 0 0 5px rgba(255, 235, 59, 0.3);
+}
+button { 
+    margin-top: 10px; 
+    padding: 8px 15px; 
+    background: #ffeb3b; 
+    border: none; 
+    color: #000; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    border-radius: 3px; 
+}
+button:hover { background: #ffc107; transform: scale(1.05); }
+button:disabled { background: #555; cursor: default; transform: none; color: #888; }
+.result { margin-top: 8px; font-size: 0.9em; height: 20px; font-weight: bold; }
+.ok { color: #ffeb3b; }
+.no { color: #ff5252; }
+
+/* ===== HINT ===== */
+.hint-box {
+    margin-top: 8px;
+    background: #332b00;
+    color: #ffca28;
+    border: 1px solid #ffca28;
+    padding: 8px;
+    font-size: 0.9em;
+    display: none;
+    border-radius: 4px;
+    animation: fadeIn 0.5s;
+}
+.hint-box.level1 { background: #1a237e; border-color: #7986cb; color: #bbdefb; }
+.hint-box.level2 { background: #332b00; border-color: #ffca28; color: #ffca28; }
+.hint-box.level3 { background: #4a0000; border-color: #ff5252; color: #ffcdd2; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== PREVIEW ===== */
+.window { 
+    width: 600px; 
+    height: 400px; 
+    background: black; 
+    border: 4px solid #333; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: #aaa; 
+    font-family: monospace; 
+    position: relative; 
+    box-shadow: 0 0 20px #000;
+    transition: all 0.5s ease;
+}
+.window.pulse { animation: pulse 0.5s; }
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); border-color: #ffeb3b; }
+}
+.bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; z-index: 1; display: block; }
+.msg { z-index: 2; text-align: center; font-size: 1.1em; text-shadow: 0 2px 2px #000; }
+
+/* PACMAN */
+.pacman {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    z-index: 3;
+    display: none;
+    transition: none;
+}
+
+/* WALL */
+.wall {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: #666;
+    border: 3px solid #999;
+    z-index: 2;
+    display: none;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* ===== SEZIONE CODICE FINALE ===== */
+#finalCodeSection {
+    margin-top: 50px;
+    padding: 20px;
+    border-top: 2px solid #ffeb3b;
+    display: none;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border-radius: 8px;
+    animation: slideIn 0.5s ease;
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+#finalCodeSection h2 {
+    color: #ffeb3b;
+    font-size: 1.5em;
+    border-bottom: none;
+}
+#finalCodeOutput {
+    background: #000;
+    color: #fff;
+    font-family: Consolas, monospace;
+    padding: 15px;
+    white-space: pre;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    border: 1px solid #ffeb3b;
+}
+.copy-btn {
+    background: #ff7043;
+    color: white;
+    margin-bottom: 20px;
+}
+.copy-btn:hover {
+    background: #e65100;
+}
+.copy-success {
+    color: #ffeb3b;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+/* ===== INFO ESPANDIBILI ===== */
+.info-expandable {
+    background: #1a1a2e;
+    border-left: 3px solid #ffeb3b;
+    padding: 8px;
+    margin: 8px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 4px;
+}
+.info-expandable:hover {
+    background: #252540;
+}
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: #ffeb3b;
+}
+.info-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    color: #aaa;
+    font-size: 0.9em;
+    padding-top: 0;
+}
+.info-content.expanded {
+    max-height: 500px;
+    padding-top: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="hud" id="hudBox">
+    <div class="score-row">
+        <span class="score-label">SCORE:</span>
+        <span class="score-val" id="scoreDisplay">1000</span>
+    </div>
+    <div class="score-row">
+        <span class="score-label" style="font-size: 0.8em;">PROGRESSIONE:</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div style="font-size: 0.7em; color: #888; text-align: center;" id="progressText">0/6 completati</div>
+</div>
+
+<div class="sidebar">
+<h1>🎮 PyGame Academy - Lezione 2</h1>
+<p><strong>Tema:</strong> Movimento continuo, animazioni sprite e collisioni con Pac-Man!</p>
+
+<div class="info-expandable" onclick="toggleInfo('welcome')">
+    <div class="info-header">
+        💡 Cosa imparerai in questa lezione? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="welcome-info">
+        • <strong>Movimento continuo</strong> - Il personaggio si muove finché tieni premuto il tasto<br>
+        • <strong>Animazioni sprite</strong> - Pac-Man cambia frame mentre si muove<br>
+        • <strong>Collisioni</strong> - Rilevare quando Pac-Man tocca un muro<br>
+        • <strong>Rect</strong> - Gestire posizioni e dimensioni degli oggetti<br>
+        • <strong>Trasformazioni</strong> - Ruotare e specchiare le immagini<br>
+        Prova la preview a destra usando le frecce direzionali!
+    </div>
+</div>
+
+<section class="level-section unlocked" id="section1">
+<h2>Livello 1 – Velocità Continua <span class="level-badge" id="badge1">🔒</span></h2>
+<div class="goal">🎯 Creare variabili per la velocità costante</div>
+<div class="constraints">⚠️ Usa vel_x e vel_y (inizialmente 0) e VELOCITA = 5</div>
+
+<div class="info-expandable" onclick="toggleInfo('l1')">
+    <div class="info-header">
+        📚 Movimento continuo vs movimento a impulsi <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l1-info">
+        Nella Lezione 1, il personaggio si muoveva solo quando premevi un tasto.<br>
+        Ora useremo <strong>variabili di velocità</strong> che aggiornano continuamente la posizione:<br>
+        • <strong>vel_x</strong> = velocità orizzontale (-5, 0, o +5)<br>
+        • <strong>vel_y</strong> = velocità verticale (-5, 0, o +5)<br>
+        Ad ogni frame del game loop, aggiungeremo vel_x/vel_y alla posizione!
+    </div>
+</div>
+
+<div class="code">
+vel_x = <input id="l1a" style="width:40px">
+<br>
+vel_y = <input id="l1b" style="width:40px">
+<br>
+VELOCITA = <input id="l1c" style="width:40px">
+</div>
+<button id="btn1" onclick="check(1)">Verifica</button>
+<div id="r1" class="result"></div>
+<div id="h1" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section2">
+<h2>Livello 2 – Gestire KEYDOWN e KEYUP <span class="level-badge" id="badge2">🔒</span></h2>
+<div class="goal">🎯 Quando premi freccia: imposta velocità. Quando rilasci: azzera velocità</div>
+<div class="constraints">ℹ️ Eventi: <b>KEYDOWN</b> (tasto premuto) e <b>KEYUP</b> (tasto rilasciato)</div>
+
+<div class="info-expandable" onclick="toggleInfo('l2')">
+    <div class="info-header">
+        📚 KEYDOWN vs KEYUP <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l2-info">
+        Per fermare Pac-Man quando rilasci il tasto, devi gestire DUE eventi:<br>
+        • <strong>KEYDOWN</strong>: quando premi il tasto → imposta vel_x = VELOCITA<br>
+        • <strong>KEYUP</strong>: quando rilasci il tasto → azzera vel_x = 0<br>
+        <br>
+        Esempio per freccia DESTRA:<br>
+        <code>if event.type == pygame.KEYDOWN:</code><br>
+        <code>&nbsp;&nbsp;if event.key == pygame.K_RIGHT: vel_x = VELOCITA</code><br>
+        <code>if event.type == pygame.KEYUP:</code><br>
+        <code>&nbsp;&nbsp;if event.key == pygame.K_RIGHT: vel_x = 0</code>
+    </div>
+</div>
+
+<div class="code">
+# Quando PREMI freccia destra
+<br>
+if event.type == pygame.<input id="l2a">:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if event.key == pygame.K_RIGHT:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vel_x = VELOCITA
+<br><br>
+# Quando RILASCI freccia destra
+<br>
+if event.type == pygame.<input id="l2b">:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if event.key == pygame.K_RIGHT:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vel_x = <input id="l2c" style="width:40px">
+</div>
+<button id="btn2" onclick="check(2)">Verifica</button>
+<div id="r2" class="result"></div>
+<div id="h2" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section3">
+<h2>Livello 3 – Caricare i Frame di Animazione <span class="level-badge" id="badge3">🔒</span></h2>
+<div class="goal">🎯 Caricare 3 immagini di Pac-Man in una lista</div>
+<div class="constraints">ℹ️ Usa <b>pygame.image.load()</b> e <b>lista.append()</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l3')">
+    <div class="info-header">
+        📚 Cos'è un'animazione sprite? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l3-info">
+        Un'animazione è fatta da più <strong>frame</strong> (immagini) mostrati in sequenza.<br>
+        Come un flipbook! Per Pac-Man abbiamo 3 frame:<br>
+        1. Bocca chiusa (pacman1.png)<br>
+        2. Bocca semi-aperta (pacman2.png)<br>
+        3. Bocca aperta (pacman3.png)<br>
+        <br>
+        Li carichiamo con <strong>pygame.image.load("nome_file.png")</strong><br>
+        e li aggiungiamo a una lista con <strong>.append()</strong>
+    </div>
+</div>
+
+<div class="code">
+pacman_frames = []
+<br>
+for i in range(1, 4):
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;img = pygame.image.<input id="l3a">(f"pacman{i}.png")
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;pacman_frames.<input id="l3b">(img)
+</div>
+<button id="btn3" onclick="check(3)">Verifica</button>
+<div id="r3" class="result"></div>
+<div id="h3" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section4">
+<h2>Livello 4 – Pygame Rect per Collisioni <span class="level-badge" id="badge4">🔒</span></h2>
+<div class="goal">🎯 Creare un Rect per Pac-Man e uno per il muro</div>
+<div class="constraints">ℹ️ Usa <b>immagine.get_rect()</b> e <b>pygame.Rect(x, y, w, h)</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l4')">
+    <div class="info-header">
+        📚 Cos'è un Rect? <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l4-info">
+        <strong>Rect</strong> = Rettangolo, è un oggetto Pygame che rappresenta:<br>
+        • Posizione (x, y)<br>
+        • Dimensioni (width, height)<br>
+        <br>
+        Serve per le <strong>collisioni</strong>! Pygame può controllare se due Rect si toccano.<br>
+        Per un'immagine: <code>rect = immagine.get_rect()</code><br>
+        Per un oggetto generico: <code>rect = pygame.Rect(x, y, width, height)</code>
+    </div>
+</div>
+
+<div class="code">
+pacman_rect = pacman_frames[0].get_<input id="l4a">()
+<br>
+wall_rect = pygame.<input id="l4b">(250, 150, 100, 100)
+</div>
+<button id="btn4" onclick="check(4)">Verifica</button>
+<div id="r4" class="result"></div>
+<div id="h4" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section5">
+<h2>Livello 5 – Rilevare la Collisione <span class="level-badge" id="badge5">🔒</span></h2>
+<div class="goal">🎯 Se Pac-Man tocca il muro, ferma il movimento</div>
+<div class="constraints">⚠️ Usa <b>rect.colliderect(altro_rect)</b> e azzera le velocità</div>
+
+<div class="info-expandable" onclick="toggleInfo('l5')">
+    <div class="info-header">
+        📚 Come gestire le collisioni <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l5-info">
+        Dopo aver aggiornato la posizione di Pac-Man, controlliamo:<br>
+        <code>if pacman_rect.colliderect(wall_rect):</code><br>
+        <br>
+        Il metodo <strong>.colliderect()</strong> restituisce True se i due rettangoli si sovrappongono.<br>
+        Se c'è collisione, possiamo:<br>
+        • Fermare il movimento (vel_x = vel_y = 0)<br>
+        • Rimbalzare (invertire velocità)<br>
+        • Tornare alla posizione precedente<br>
+        In questo caso, <strong>fermiamo</strong> Pac-Man!
+    </div>
+</div>
+
+<div class="code">
+if pacman_rect.<input id="l5a">(wall_rect):
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;vel_x = <input id="l5b" style="width:40px">
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;vel_y = <input id="l5c" style="width:40px">
+</div>
+<button id="btn5" onclick="check(5)">Verifica</button>
+<div id="r5" class="result"></div>
+<div id="h5" class="hint-box"></div>
+</section>
+
+<section class="level-section" id="section6">
+<h2>Livello 6 – Rotazione e Specchiamento <span class="level-badge" id="badge6">🔒</span></h2>
+<div class="goal">🎯 Ruotare Pac-Man in base alla direzione di movimento</div>
+<div class="constraints">ℹ️ Usa <b>pygame.transform.rotate()</b> e <b>pygame.transform.flip()</b></div>
+
+<div class="info-expandable" onclick="toggleInfo('l6')">
+    <div class="info-header">
+        📚 Trasformare le immagini <span style="margin-left: auto;">▼</span>
+    </div>
+    <div class="info-content" id="l6-info">
+        Per far guardare Pac-Man nella direzione giusta:<br>
+        • <strong>Destra</strong>: immagine originale<br>
+        • <strong>Sinistra</strong>: <code>pygame.transform.flip(img, True, False)</code> (specchia orizzontalmente)<br>
+        • <strong>Su</strong>: <code>pygame.transform.rotate(img, 90)</code><br>
+        • <strong>Giù</strong>: <code>pygame.transform.rotate(img, 270)</code><br>
+        <br>
+        Il primo parametro di flip è flip_x (True/False), il secondo flip_y.
+    </div>
+</div>
+
+<div class="code">
+# Specchiare (per andare a sinistra)
+<br>
+img_sinistra = pygame.transform.<input id="l6a">(img, True, False)
+<br><br>
+# Ruotare di 90° (per andare su)
+<br>
+img_su = pygame.transform.<input id="l6b">(img, 90)
+</div>
+<button id="btn6" onclick="check(6)">Verifica</button>
+<div id="r6" class="result"></div>
+<div id="h6" class="hint-box"></div>
+</section>
+
+<div id="finalCodeSection">
+    <h2>🏆 LEZIONE 2 COMPLETATA!</h2>
+    <p>Eccellente! Ora sai gestire movimento continuo, animazioni, collisioni e trasformazioni. Copia il codice completo:</p>
+    <button class="copy-btn" onclick="copyCode()">📋 Copia Codice Python</button> <span id="copyFeedback" class="copy-success"></span>
+    <pre id="finalCodeOutput"></pre>
+</div>
+
+<div style="height: 50px;"></div>
+</div>
+
+<div class="preview">
+    <div class="window" id="gameWindow">
+        <div class="bg" id="bg"></div>
+        <div class="msg" id="msg">SYSTEM READY<br>Completa i livelli per vedere Pac-Man!</div>
+        <img id="pacman" class="pacman" src="" alt="Pacman">
+        <div id="wall" class="wall"></div>
+    </div>
+</div>
+
+<script >
+    // STATO DEL GIOCO
+let score = 1000;
+let attempts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+let completed = { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+
+// VARIABILI PACMAN
+let pacman_x = 50;
+let pacman_y = 200;
+let vel_x = 0;
+let vel_y = 0;
+const VELOCITA = 3;
+let currentFrame = 0;
+let animationCounter = 0;
+let pacmanDirection = 'right'; // 'right', 'left', 'up', 'down'
+
+// HINT A 3 LIVELLI
+const hints = {
+    1: {
+        level1: "💡 Le velocità iniziano a zero (il pacman è fermo)...",
+        level2: "💡 Quasi! vel_x = 0, vel_y = 0, VELOCITA = 5",
+        level3: "💡 Soluzione: 0 | 0 | 5"
+    },
+    2: {
+        level1: "💡 KEYDOWN = tasto premuto, KEYUP = tasto rilasciato...",
+        level2: "💡 Quasi! KEYDOWN | KEYUP | 0 (azzera quando rilasci)",
+        level3: "💡 Soluzione: KEYDOWN | KEYUP | 0"
+    },
+    3: {
+        level1: "💡 Per caricare immagini usi load(), per aggiungere a lista usi append()...",
+        level2: "💡 Quasi! pygame.image.load(filename) e lista.append(elemento)",
+        level3: "💡 Soluzione: load | append"
+    },
+    4: {
+        level1: "💡 Ogni immagine pygame ha un metodo get_rect(), per creare rettangoli usi pygame.Rect()...",
+        level2: "💡 Quasi! get_rect() | pygame.Rect(x, y, w, h)",
+        level3: "💡 Soluzione: rect | Rect"
+    },
+    5: {
+        level1: "💡 Il metodo per controllare sovrapposizioni è colliderect(), per fermare azzera le velocità...",
+        level2: "💡 Quasi! colliderect() | Per fermare: vel_x = 0, vel_y = 0",
+        level3: "💡 Soluzione: colliderect | 0 | 0"
+    },
+    6: {
+        level1: "💡 Per specchiare usi flip(), per ruotare usi rotate()...",
+        level2: "💡 Quasi! pygame.transform.flip(img, True, False) e pygame.transform.rotate(img, angolo)",
+        level3: "💡 Soluzione: flip | rotate"
+    }
+};
+
+// PACMAN FRAMES (simulazione con canvas)
+const pacmanFrames = [];
+
+// Crea i frame di Pac-Man usando canvas
+function createPacmanFrames() {
+    const size = 50;
+    
+    // Frame 1: bocca chiusa
+    const canvas1 = document.createElement('canvas');
+    canvas1.width = size;
+    canvas1.height = size;
+    const ctx1 = canvas1.getContext('2d');
+    ctx1.fillStyle = '#FFFF00';
+    ctx1.beginPath();
+    ctx1.arc(size/2, size/2, size/2, 0, 2 * Math.PI);
+    ctx1.fill();
+    ctx1.fillStyle = '#000';
+    ctx1.beginPath();
+    ctx1.arc(size/2 + 8, size/2 - 10, 4, 0, 2 * Math.PI);
+    ctx1.fill();
+    pacmanFrames.push(canvas1.toDataURL());
+    
+    // Frame 2: bocca semi-aperta
+    const canvas2 = document.createElement('canvas');
+    canvas2.width = size;
+    canvas2.height = size;
+    const ctx2 = canvas2.getContext('2d');
+    ctx2.fillStyle = '#FFFF00';
+    ctx2.beginPath();
+    ctx2.arc(size/2, size/2, size/2, 0.2, 2 * Math.PI - 0.2);
+    ctx2.lineTo(size/2, size/2);
+    ctx2.fill();
+    ctx2.fillStyle = '#000';
+    ctx2.beginPath();
+    ctx2.arc(size/2 + 8, size/2 - 10, 4, 0, 2 * Math.PI);
+    ctx2.fill();
+    pacmanFrames.push(canvas2.toDataURL());
+    
+    // Frame 3: bocca aperta
+    const canvas3 = document.createElement('canvas');
+    canvas3.width = size;
+    canvas3.height = size;
+    const ctx3 = canvas3.getContext('2d');
+    ctx3.fillStyle = '#FFFF00';
+    ctx3.beginPath();
+    ctx3.arc(size/2, size/2, size/2, 0.4, 2 * Math.PI - 0.4);
+    ctx3.lineTo(size/2, size/2);
+    ctx3.fill();
+    ctx3.fillStyle = '#000';
+    ctx3.beginPath();
+    ctx3.arc(size/2 + 8, size/2 - 10, 4, 0, 2 * Math.PI);
+    ctx3.fill();
+    pacmanFrames.push(canvas3.toDataURL());
+}
+
+// Toggle info espandibili
+function toggleInfo(id) {
+    const content = document.getElementById(id + '-info');
+    content.classList.toggle('expanded');
+}
+
+// Aggiorna barra progressione
+function updateProgress() {
+    const total = 6;
+    const completedCount = Object.values(completed).filter(v => v).length;
+    const percentage = (completedCount / total) * 100;
+    
+    document.getElementById('progressFill').style.width = percentage + '%';
+    document.getElementById('progressText').innerText = `${completedCount}/${total} completati`;
+}
+
+// Funzione aggiornamento punteggio
+function updateScore(amount) {
+    score += amount;
+    if (score < 0) score = 0;
+    
+    const display = document.getElementById("scoreDisplay");
+    const hud = document.getElementById("hudBox");
+    
+    display.innerText = score;
+    
+    if (amount < 0) {
+        hud.classList.remove("damage-anim");
+        void hud.offsetWidth;
+        hud.classList.add("damage-anim");
+    }
+}
+
+// Confetti quando completa un livello
+function createConfetti() {
+    const colors = ['#ffeb3b', '#ffc107', '#2196f3', '#ff5722', '#9c27b0'];
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * window.innerWidth + 'px';
+            confetti.style.top = '-10px';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animation = `confetti-fall ${2 + Math.random()}s linear forwards`;
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => confetti.remove(), 3000);
+        }, i * 30);
+    }
+}
+
+// Funzione per mostrare suggerimento progressivo
+function showHint(level) {
+    const hintEl = document.getElementById("h" + level);
+    const attemptCount = attempts[level];
+    
+    let hintText;
+    if (attemptCount === 1) {
+        hintText = hints[level].level1;
+        hintEl.className = "hint-box level1";
+    } else if (attemptCount === 2) {
+        hintText = hints[level].level2;
+        hintEl.className = "hint-box level2";
+    } else {
+        hintText = hints[level].level3;
+        hintEl.className = "hint-box level3";
+    }
+    
+    hintEl.innerText = hintText;
+    hintEl.style.display = "block";
+    
+    setTimeout(() => {
+        hintEl.style.display = "none";
+    }, 6000);
+}
+
+// Aggiorna posizione Pac-Man
+function updatePacmanPosition() {
+    const pacman = document.getElementById("pacman");
+    
+    // Movimento
+    pacman_x += vel_x;
+    pacman_y += vel_y;
+    
+    // Bordi finestra
+    if (pacman_x < 0) pacman_x = 0;
+    if (pacman_x > 550) pacman_x = 550;
+    if (pacman_y < 0) pacman_y = 0;
+    if (pacman_y > 350) pacman_y = 350;
+    
+    // Collisione con muro (250, 150, 100, 100)
+    if (completed[4]) {
+        const px = pacman_x;
+        const py = pacman_y;
+        const pw = 50;
+        const ph = 50;
+        
+        const wx = 250;
+        const wy = 150;
+        const ww = 100;
+        const wh = 100;
+        
+        // Check collisione
+        if (px < wx + ww && px + pw > wx && py < wy + wh && py + ph > wy) {
+            vel_x = 0;
+            vel_y = 0;
+            // Respingi leggermente
+            if (px < wx) pacman_x = wx - pw - 2;
+            else if (px > wx) pacman_x = wx + ww + 2;
+            if (py < wy) pacman_y = wy - ph - 2;
+            else if (py > wy) pacman_y = wy + wh + 2;
+        }
+    }
+    
+    // Aggiorna posizione visuale
+    pacman.style.left = pacman_x + 'px';
+    pacman.style.top = pacman_y + 'px';
+    
+    // Animazione frame solo se in movimento
+    if (vel_x !== 0 || vel_y !== 0) {
+        animationCounter++;
+        if (animationCounter > 5) {
+            currentFrame = (currentFrame + 1) % 3;
+            pacman.src = pacmanFrames[currentFrame];
+            animationCounter = 0;
+        }
+    } else {
+        // Se fermo, mostra frame chiuso
+        currentFrame = 0;
+        pacman.src = pacmanFrames[0];
+    }
+    
+    // Rotazione/specchiamento in base alla direzione
+    if (completed[5]) {
+        let transform = '';
+        
+        if (vel_x > 0) {
+            pacmanDirection = 'right';
+            transform = 'scaleX(1) rotate(0deg)';
+        } else if (vel_x < 0) {
+            pacmanDirection = 'left';
+            transform = 'scaleX(-1) rotate(0deg)';
+        } else if (vel_y < 0) {
+            pacmanDirection = 'up';
+            transform = 'scaleX(1) rotate(-90deg)';
+        } else if (vel_y > 0) {
+            pacmanDirection = 'down';
+            transform = 'scaleX(1) rotate(90deg)';
+        }
+        
+        pacman.style.transform = transform;
+    }
+}
+
+// Gestione input tastiera
+let gameLoop = null;
+let keysPressed = {};
+
+function startGameLoop() {
+    if (gameLoop) return;
+    
+    gameLoop = setInterval(updatePacmanPosition, 33); // ~30 FPS
+    
+    // KEYDOWN: quando premi il tasto
+    document.addEventListener('keydown', function(e) {
+        if (!completed[1]) return;
+        if (keysPressed[e.key]) return; // Previeni ripetizioni
+        keysPressed[e.key] = true;
+        
+        if (e.key === 'ArrowRight') {
+            vel_x = VELOCITA;
+            vel_y = 0;
+            e.preventDefault();
+        } else if (e.key === 'ArrowLeft') {
+            vel_x = -VELOCITA;
+            vel_y = 0;
+            e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+            vel_x = 0;
+            vel_y = -VELOCITA;
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+            vel_x = 0;
+            vel_y = VELOCITA;
+            e.preventDefault();
+        }
+    });
+    
+    // KEYUP: quando rilasci il tasto (solo se livello 2 completato)
+    document.addEventListener('keyup', function(e) {
+        if (!completed[1]) return;
+        keysPressed[e.key] = false;
+        
+        if (e.key === 'ArrowRight' && vel_x > 0) {
+            vel_x = 0;
+        } else if (e.key === 'ArrowLeft' && vel_x < 0) {
+            vel_x = 0;
+        } else if (e.key === 'ArrowUp' && vel_y < 0) {
+            vel_y = 0;
+        } else if (e.key === 'ArrowDown' && vel_y > 0) {
+            vel_y = 0;
+        }
+    });
+}
+
+function unlockNextLevel(level) {
+    if (level < 6) {
+        const nextSection = document.getElementById('section' + (level + 1));
+        nextSection.classList.add('unlocked');
+        
+        setTimeout(() => {
+            nextSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 500);
+    }
+}
+
+function checkAllCompleted() {
+    const allCompleted = Object.values(completed).every(status => status === true);
+    
+    if (allCompleted) {
+        document.getElementById("finalCodeSection").style.display = 'block';
+        generatePythonCode();
+        
+        setTimeout(() => {
+            document.getElementById("finalCodeSection").scrollIntoView({ behavior: 'smooth' });
+        }, 1000);
+    }
+}
+
+function generatePythonCode() {
+    const code = `# PyGame Academy - Lezione 3: Labirinto, IA e Sistema Vite (CORRETTO)
+import pygame
+import math
+from collections import deque
+
+# 1. Inizializzazione
+pygame.init()
+clock = pygame.time.Clock()
+
+# 2. Setup Finestra
+LARGHEZZA = 600
+ALTEZZA = 600
+screen = pygame.display.set_mode((LARGHEZZA, ALTEZZA))
+pygame.display.set_caption("Pac-Man Maze - Lezione 3 Corretta")
+
+# 3. Colori
+NERO = (0, 0, 0)
+GRIGIO = (68, 68, 68)
+GIALLO = (255, 255, 0)
+BLU_GHOST = (0, 191, 255)
+BIANCO = (255, 255, 255)
+
+# LIVELLO 1: Matrice Labirinto
+maze = [
+    [1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,1,1,1,0,1],
+    [1,0,1,0,0,0,0,0,0,1,0,1],
+    [1,0,1,0,1,1,1,1,0,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,1,1,1,0,1],
+    [1,0,0,0,1,0,0,0,0,1,0,1],
+    [1,1,1,0,1,1,1,1,0,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,1,1,1,1,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1]
+]
+
+# LIVELLO 2: Dimensione Celle e creazione Muri
+CELL_SIZE = LARGHEZZA // len(maze[0])
+
+# Creiamo una lista di Rect per i muri: questo risolve i problemi di collisione!
+walls = []
+for row_idx, row in enumerate(maze):
+    for col_idx, cell in enumerate(row):
+        if cell == 1:
+            walls.append(pygame.Rect(col_idx * CELL_SIZE, row_idx * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+
+# 4. Caricamento Sprite
+try:
+    pacman_img = pygame.image.load("pacman1.png")
+    ghost_img = pygame.image.load("ghost_blue.png")
+    # Ridimensioniamo leggermente meno della cella (padding) per non incastrarsi
+    pacman_scaled = pygame.transform.scale(pacman_img, (CELL_SIZE - 4, CELL_SIZE - 4))
+    ghost_scaled = pygame.transform.scale(ghost_img, (CELL_SIZE - 4, CELL_SIZE - 4))
+    USE_IMAGES = True
+except:
+    USE_IMAGES = False
+
+# Personaggi come Rect per gestire le collisioni
+# Li posizioniamo al centro della cella (1,1) e (10,10)
+player_rect = pygame.Rect(CELL_SIZE + 2, CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4)
+ghost_rect = pygame.Rect(CELL_SIZE * 10 + 2, CELL_SIZE * 10 + 2, CELL_SIZE - 4, CELL_SIZE - 4)
+
+vel_x, vel_y = 0, 0
+VELOCITA = 3 # Ridotta leggermente per precisione
+ghost_speed = 2
+lives = 3
+game_over = False
+invincible = False
+respawn_timer = 0
+
+# LIVELLO 6: BFS Pathfinding (Invariato, ma usato con i Rect)
+def bfs_pathfinding(maze, start, goal):
+    queue = deque([start])
+    visited = {start}
+    parent = {}
+    directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    
+    while queue:
+        current = queue.popleft()
+        if current == goal:
+            path = []
+            while current in parent:
+                path.append(current)
+                current = parent[current]
+            path.reverse()
+            return path
+        
+        cy, cx = current
+        for dy, dx in directions:
+            ny, nx = cy + dy, cx + dx
+            if 0 <= ny < len(maze) and 0 <= nx < len(maze[0]) and maze[ny][nx] == 0:
+                if (ny, nx) not in visited:
+                    visited.add((ny, nx))
+                    parent[(ny, nx)] = current
+                    queue.append((ny, nx))
+    return []
+
+# Funzioni di disegno (Invariate)
+def draw_pacman(surface, rect):
+    pygame.draw.circle(surface, GIALLO, rect.center, rect.width // 2)
+def draw_ghost(surface, rect):
+    pygame.draw.rect(surface, BLU_GHOST, rect, border_radius=5)
+
+font = pygame.font.Font(None, 36)
+
+# Loop di gioco
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN and not game_over:
+            if event.key == pygame.K_RIGHT: vel_x, vel_y = VELOCITA, 0
+            elif event.key == pygame.K_LEFT: vel_x, vel_y = -VELOCITA, 0
+            elif event.key == pygame.K_UP: vel_x, vel_y = 0, -VELOCITA
+            elif event.key == pygame.K_DOWN: vel_x, vel_y = 0, VELOCITA
+        if event.type == pygame.KEYUP:
+            if event.key in [pygame.K_LEFT, pygame.K_RIGHT]: vel_x = 0
+            if event.key in [pygame.K_UP, pygame.K_DOWN]: vel_y = 0
+
+    if not game_over:
+        # --- MOVIMENTO GIOCATORE CON COLLISIONI REALI ---
+        # Muovi X
+        player_rect.x += vel_x
+        for wall in walls:
+            if player_rect.colliderect(wall):
+                if vel_x > 0: player_rect.right = wall.left
+                if vel_x < 0: player_rect.left = wall.right
+        
+        # Muovi Y
+        player_rect.y += vel_y
+        for wall in walls:
+            if player_rect.colliderect(wall):
+                if vel_y > 0: player_rect.bottom = wall.top
+                if vel_y < 0: player_rect.top = wall.bottom
+
+        # --- MOVIMENTO FANTASMA (IA) ---
+        p_grid = (player_rect.centery // CELL_SIZE, player_rect.centerx // CELL_SIZE)
+        g_grid = (ghost_rect.centery // CELL_SIZE, ghost_rect.centerx // CELL_SIZE)
+        
+        path = bfs_pathfinding(maze, g_grid, p_grid)
+        if path:
+            target_cell = path[0]
+            target_x = target_cell[1] * CELL_SIZE + 2
+            target_y = target_cell[0] * CELL_SIZE + 2
+            
+            if ghost_rect.x < target_x: ghost_rect.x += ghost_speed
+            elif ghost_rect.x > target_x: ghost_rect.x -= ghost_speed
+            if ghost_rect.y < target_y: ghost_rect.y += ghost_speed
+            elif ghost_rect.y > target_y: ghost_rect.y -= ghost_speed
+
+        # --- COLLISIONE PACMAN-GHOST ---
+        if player_rect.colliderect(ghost_rect) and not invincible:
+            lives -= 1
+            if lives <= 0:
+                game_over = True
+            else:
+                invincible = True
+                respawn_timer = pygame.time.get_ticks()
+                player_rect.topleft = (CELL_SIZE + 2, CELL_SIZE + 2)
+
+        if invincible and pygame.time.get_ticks() - respawn_timer > 2000:
+            invincible = False
+
+    # --- DISEGNO ---
+    screen.fill(NERO)
+    for wall in walls:
+        pygame.draw.rect(screen, GRIGIO, wall)
+        pygame.draw.rect(screen, (100, 100, 100), wall, 1)
+
+    if not invincible or (pygame.time.get_ticks() // 200 % 2 == 0):
+        if USE_IMAGES: screen.blit(pacman_scaled, player_rect)
+        else: draw_pacman(screen, player_rect)
+    
+    if USE_IMAGES: screen.blit(ghost_scaled, ghost_rect)
+    else: draw_ghost(screen, ghost_rect)
+
+    # UI
+    txt = font.render(f"Vite: {lives}", True, BIANCO)
+    screen.blit(txt, (20, 20))
+    if game_over:
+        msg = font.render("GAME OVER - Premi R per Reset", True, (255, 0, 0))
+        screen.blit(msg, (LARGHEZZA//2 - 150, ALTEZZA//2))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()`;
+    
+    document.getElementById("finalCodeOutput").innerText = code.trim();
+}
+
+function copyCode() {
+    const codeText = document.getElementById("finalCodeOutput").innerText;
+    const feedback = document.getElementById("copyFeedback");
+    
+    navigator.clipboard.writeText(codeText).then(() => {
+        feedback.innerText = "✅ COPIATO!";
+        setTimeout(() => feedback.innerText = "", 2000);
+    }).catch(err => {
+        console.error('Errore nella copia: ', err);
+        feedback.innerText = "❌ Errore nella copia!";
+    });
+}
+
+// Funzione unificata di controllo
+function check(level) {
+    if (completed[level]) return;
+
+    let ok = false;
+    let resultDiv = document.getElementById("r" + level);
+    
+    const msg = document.getElementById("msg");
+    const gameWindow = document.getElementById("gameWindow");
+    const pacman = document.getElementById("pacman");
+    const wall = document.getElementById("wall");
+    
+    if (level === 1) {
+        ok = document.getElementById("l1a").value.trim() == "0" && 
+             document.getElementById("l1b").value.trim() == "0" &&
+             document.getElementById("l1c").value.trim() == "5";
+        if(ok) {
+            msg.innerText = ">> Variabili di velocità inizializzate.";
+            pacman.style.display = 'block';
+            pacman.src = pacmanFrames[0];
+            startGameLoop();
+        }
+    } 
+    else if (level === 2) {
+        ok = document.getElementById("l2a").value.trim() === "KEYDOWN" && 
+             document.getElementById("l2b").value.trim() === "KEYUP" &&
+             document.getElementById("l2c").value.trim() == "0";
+        if(ok) {
+            msg.innerText = ">> Eventi KEYDOWN e KEYUP gestiti! Tieni premuto per muoverti.";
+        }
+    }
+    else if (level === 3) {
+        ok = document.getElementById("l3a").value.trim() === "load" &&
+             document.getElementById("l3b").value.trim() === "append";
+        if(ok) {
+            msg.innerText = ">> Frame di animazione caricati (3 frame).";
+        }
+    }
+    else if (level === 4) {
+        ok = document.getElementById("l4a").value.trim() === "rect" && 
+             document.getElementById("l4b").value.trim() === "Rect";
+        if(ok) {
+            msg.innerText = ">> Rect creati per gestire collisioni.";
+            wall.style.display = 'block';
+            gameWindow.classList.add("pulse");
+            setTimeout(() => gameWindow.classList.remove("pulse"), 500);
+        }
+    }
+    else if (level === 5) {
+        ok = document.getElementById("l5a").value.trim() === "colliderect" &&
+             document.getElementById("l5b").value.trim() == "0" &&
+             document.getElementById("l5c").value.trim() == "0";
+        if(ok) {
+            msg.innerText = ">> Collisioni attive! Pac-Man si ferma contro il muro.";
+        }
+    }
+    else if (level === 6) {
+        ok = document.getElementById("l6a").value.trim() === "flip" &&
+             document.getElementById("l6b").value.trim() === "rotate";
+        if(ok) {
+            msg.innerText = ">> Trasformazioni attive! Pac-Man guarda dove si muove.";
+        }
+    }
+
+    if (ok) {
+        resultDiv.innerHTML = "✅ LIVELLO COMPLETATO";
+        resultDiv.className = "result ok";
+        completed[level] = true;
+        document.getElementById("btn" + level).disabled = true;
+        document.getElementById("h" + level).style.display = "none";
+        
+        const badge = document.getElementById("badge" + level);
+        badge.innerText = "✅";
+        badge.classList.add("completed");
+        
+        createConfetti();
+        updateProgress();
+        unlockNextLevel(level);
+        
+        checkAllCompleted();
+    } else {
+        updateScore(-50);
+        attempts[level]++;
+        
+        if (attempts[level] <= 3) {
+            resultDiv.innerHTML = `❌ ERRORE (-50 pt). Suggerimento dopo ${4 - attempts[level]} tentativi.`;
+            showHint(level);
+        } else {
+            resultDiv.innerHTML = `❌ ERRORE (-50 pt). Controlla il suggerimento!`;
+            showHint(level);
+        }
+        resultDiv.className = "result no";
+    }
+}
+
+// Inizializzazione
+document.addEventListener('DOMContentLoaded', () => {
+    createPacmanFrames();
+    updateProgress();
+});
+// ============================================
+// CODICE DA AGGIUNGERE ALLA FINE DELLO SCRIPT DI OGNI LEZIONE
+// Inserisci questo DOPO tutte le altre funzioni
+// ============================================
+
+// MODIFICA la funzione checkAllCompleted esistente con questa:
+function checkAllCompleted() {
+    const allCompleted = Object.values(completed).every(status => status === true);
+    
+    if (allCompleted) {
+        document.getElementById("finalCodeSection").style.display = 'block';
+        generatePythonCode();
+        
+        // ===== NUOVO CODICE PER SALVARE IL COMPLETAMENTO =====
+        const LESSON_ID = 2;  // ⚠️ CAMBIA QUESTO: 1 per lezione1, 2 per lezione2, ecc.
+        
+        const completionData = {
+            lessonId: LESSON_ID,
+            score: score,  // variabile già esistente nella lezione
+            attempts: Object.values(attempts).reduce((sum, val) => sum + val, 0),
+            completedAt: new Date().toISOString()
+        };
+        
+        // Salva nel sessionStorage
+        sessionStorage.setItem('lesson_completion', JSON.stringify(completionData));
+        
+        // Mostra messaggio di successo
+        setTimeout(() => {
+            const goBack = confirm(
+                `🎉 Complimenti! Hai completato la lezione!\n\n` +
+                `🏆 Punteggio finale: ${score}/1000\n\n` +
+                `Clicca OK per tornare al portale e sbloccare la prossima lezione.`
+            );
+            
+            if (goBack) {
+                window.location.href = '../index.html';  // Torna al portale
+            }
+        }, 1000);
+        // ===== FINE NUOVO CODICE =====
+        
+        setTimeout(() => {
+            document.getElementById("finalCodeSection").scrollIntoView({ behavior: 'smooth' });
+        }, 1500);
+    }
+}
+</script>
+
+</body>
+</html>
