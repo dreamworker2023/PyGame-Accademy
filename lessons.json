@@ -1,0 +1,47 @@
+{
+  "lessons": [
+    {
+      "id": 1,
+      "title": "🎯 Lezione 1: Fondamenti di Pygame",
+      "description": "Impara le basi di Pygame: inizializzazione, creazione della finestra, loop di gioco e disegno di forme semplici. Creerai un cerchio blu che si muove con le frecce direzionali.",
+      "topics": ["pygame.init()", "display.set_mode()", "event.get()", "draw.circle()", "Game Loop"],
+      "folder": "lezione1",
+      "file": "lezione1.html",
+      "completed": false,
+      "score": 1000,
+      "attempts": 0,
+      "completionDate": null
+    },
+    {
+      "id": 2,
+      "title": "👾 Lezione 2: Pac-Man - Movimento e Animazioni",
+      "description": "Crea Pac-Man! Impara il movimento continuo con KEYDOWN/KEYUP, animazioni sprite con frame multipli, collisioni con oggetti scenici e trasformazioni delle immagini.",
+      "topics": ["Movimento Continuo", "Sprite Animation", "Rect & Collisioni", "transform.rotate()", "transform.flip()"],
+      "folder": "lezione2",
+      "file": "lezione2.html",
+      "completed": false,
+      "score": 1000,
+      "attempts": 0,
+      "completionDate": null
+    },
+    {
+      "id": 3,
+      "title": "👻 Lezione 3: Labirinto, IA e Sistema Vite",
+      "description": "Crea un labirinto con matrice, aggiungi un nemico con intelligenza artificiale (pathfinding), gestisci collisioni complesse e implementa un sistema di vite per il giocatore.",
+      "topics": ["Matrici 2D", "Pathfinding BFS", "Scale Sprites", "Sistema Vite", "Collisioni Avanzate"],
+      "folder": "lezione3",
+      "file": "lezione3.html",
+      "completed": false,
+      "score": 1000,
+      "attempts": 0,
+      "completionDate": null
+    }
+  ],
+  "studentStats": {
+    "totalScore": 0,
+    "averageScore": 0,
+    "totalAttempts": 0,
+    "totalTimeSpent": 0,
+    "lastAccess": null
+  }
+}

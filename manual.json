@@ -1,0 +1,541 @@
+{
+  "manualSections": [
+    {
+      "id": "init",
+      "title": "📦 Inizializzazione Pygame",
+      "category": "Base",
+      "relatedLessons": [1],
+      "icon": "📦",
+      "shortDesc": "pygame.init(), display, clock",
+      "content": [
+        {
+          "type": "section",
+          "title": "1. Importare Pygame",
+          "text": "Prima di tutto, devi importare la libreria Pygame nel tuo programma:",
+          "code": "import pygame"
+        },
+        {
+          "type": "section",
+          "title": "2. Inizializzare Pygame",
+          "text": "Dopo l'import, devi inizializzare tutti i moduli di Pygame:",
+          "code": "pygame.init()",
+          "note": "Questo prepara Pygame per l'uso. È obbligatorio chiamarlo prima di usare qualsiasi altra funzione!"
+        },
+        {
+          "type": "section",
+          "title": "3. Creare la Finestra di Gioco",
+          "text": "Definisci le dimensioni e crea la finestra:",
+          "code": "LARGHEZZA = 600\nALTEZZA = 400\nscreen = pygame.display.set_mode((LARGHEZZA, ALTEZZA))\npygame.display.set_caption(\"Il Mio Gioco\")",
+          "highlight": "set_mode() crea la finestra con le dimensioni specificate (larghezza, altezza)."
+        },
+        {
+          "type": "section",
+          "title": "4. Clock per Gestire gli FPS",
+          "text": "Il clock ti permette di controllare la velocità del gioco (frame al secondo).",
+          "code": "clock = pygame.time.Clock()\n\n# Nel game loop:\nclock.tick(60)  # Limita a 60 FPS"
+        }
+      ]
+    },
+    {
+      "id": "events",
+      "title": "⌨️ Gestione Eventi",
+      "category": "Input",
+      "relatedLessons": [1, 2],
+      "icon": "⌨️",
+      "shortDesc": "KEYDOWN, KEYUP, QUIT, event.get()",
+      "content": [
+        {
+          "type": "section",
+          "title": "Cos'è un Evento?",
+          "text": "Gli eventi sono azioni dell'utente o del sistema:",
+          "list": [
+            "Premere/Rilasciare un tasto",
+            "Muovere il mouse",
+            "Cliccare un bottone",
+            "Chiudere la finestra"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "1. Ottenere gli Eventi",
+          "text": "Nel game loop, devi controllare tutti gli eventi accaduti:",
+          "code": "for event in pygame.event.get():\n    # Qui gestisci ogni evento",
+          "highlight": "pygame.event.get() restituisce una lista di tutti gli eventi dalla scorsa chiamata."
+        },
+        {
+          "type": "section",
+          "title": "2. Evento QUIT (Chiusura)",
+          "code": "if event.type == pygame.QUIT:\n    running = False",
+          "text": "Quando l'utente clicca sulla X per chiudere la finestra."
+        },
+        {
+          "type": "section",
+          "title": "3. Evento KEYDOWN (Tasto Premuto)",
+          "code": "if event.type == pygame.KEYDOWN:\n    if event.key == pygame.K_SPACE:\n        print(\"Barra spaziatrice premuta!\")\n    if event.key == pygame.K_LEFT:\n        print(\"Freccia sinistra premuta!\")",
+          "highlight": "KEYDOWN si attiva UNA VOLTA quando premi il tasto."
+        },
+        {
+          "type": "section",
+          "title": "4. Evento KEYUP (Tasto Rilasciato)",
+          "code": "if event.type == pygame.KEYUP:\n    if event.key == pygame.K_SPACE:\n        print(\"Barra spaziatrice rilasciata!\")",
+          "highlight": "KEYUP si attiva quando RILASCI il tasto."
+        },
+        {
+          "type": "section",
+          "title": "5. Tasti Principali",
+          "list": [
+            "K_LEFT, K_RIGHT, K_UP, K_DOWN - Frecce direzionali",
+            "K_SPACE - Barra spaziatrice",
+            "K_RETURN - Invio",
+            "K_ESCAPE - Esc",
+            "K_a, K_b, ... - Lettere (minuscole)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "title": "🎨 Disegno e Grafica",
+      "category": "Grafica",
+      "relatedLessons": [1],
+      "icon": "🎨",
+      "shortDesc": "draw.circle(), draw.rect(), blit()",
+      "content": [
+        {
+          "type": "section",
+          "title": "1. Colori in Pygame",
+          "text": "I colori sono tuple RGB (Red, Green, Blue) con valori 0-255:",
+          "code": "NERO = (0, 0, 0)\nBIANCO = (255, 255, 255)\nROSSO = (255, 0, 0)\nVERDE = (0, 255, 0)\nBLU = (0, 0, 255)\nGIALLO = (255, 255, 0)"
+        },
+        {
+          "type": "section",
+          "title": "2. Riempire lo Schermo",
+          "code": "screen.fill(NERO)",
+          "text": "Riempie l'intera finestra con un colore.",
+          "note": "Chiamalo all'inizio di ogni frame!"
+        },
+        {
+          "type": "section",
+          "title": "3. Disegnare un Cerchio",
+          "code": "pygame.draw.circle(screen, colore, (x, y), raggio)",
+          "text": "Parametri:",
+          "list": [
+            "screen - Dove disegnare",
+            "colore - Tupla RGB",
+            "(x, y) - Centro del cerchio",
+            "raggio - Dimensione"
+          ],
+          "example": "# Cerchio blu di raggio 25 al centro\npygame.draw.circle(screen, (0, 0, 255), (300, 200), 25)"
+        },
+        {
+          "type": "section",
+          "title": "4. Disegnare un Rettangolo",
+          "code": "pygame.draw.rect(screen, colore, (x, y, larghezza, altezza))\n\n# Oppure usando un oggetto Rect:\nrect = pygame.Rect(100, 100, 50, 80)\npygame.draw.rect(screen, ROSSO, rect)"
+        },
+        {
+          "type": "section",
+          "title": "5. Caricare e Disegnare Immagini",
+          "code": "# Carica immagine\nbackground = pygame.image.load(\"sfondo.png\")\n\n# Disegna immagine (blit = \"incollare\")\nscreen.blit(background, (0, 0))",
+          "highlight": "blit(immagine, posizione) \"incolla\" un'immagine sulla surface. La posizione (0, 0) è l'angolo in alto a sinistra."
+        },
+        {
+          "type": "section",
+          "title": "6. Aggiornare lo Schermo",
+          "text": "Dopo aver disegnato tutto, devi aggiornare lo schermo:",
+          "code": "pygame.display.flip()",
+          "note": "Le modifiche non sono visibili finché non chiami flip()!"
+        }
+      ]
+    },
+    {
+      "id": "sprites",
+      "title": "🎭 Sprite e Animazioni",
+      "category": "Grafica",
+      "relatedLessons": [2],
+      "icon": "🎭",
+      "shortDesc": "Caricare immagini, frame, animazioni",
+      "content": [
+        {
+          "type": "section",
+          "title": "Cos'è uno Sprite?",
+          "text": "Uno sprite è un'immagine 2D che rappresenta un oggetto di gioco (personaggio, nemico, oggetto, ecc.). Un'animazione è una sequenza di sprite (frame) mostrati in rapida successione."
+        },
+        {
+          "type": "section",
+          "title": "1. Caricare un Singolo Sprite",
+          "code": "player_img = pygame.image.load(\"player.png\")",
+          "note": "Assicurati che il file sia nella stessa cartella del tuo script Python!"
+        },
+        {
+          "type": "section",
+          "title": "2. Caricare Frame di Animazione",
+          "text": "Se hai più frame (es. pacman1.png, pacman2.png, pacman3.png):",
+          "code": "frames = []\nfor i in range(1, 4):  # Da 1 a 3\n    img = pygame.image.load(f\"pacman{i}.png\")\n    frames.append(img)",
+          "note": "Ora frames è una lista con 3 immagini!"
+        },
+        {
+          "type": "section",
+          "title": "3. Mostrare un Frame",
+          "code": "current_frame = 0\nscreen.blit(frames[current_frame], (x, y))"
+        },
+        {
+          "type": "section",
+          "title": "4. Animare i Frame",
+          "text": "Cambia frame periodicamente per creare l'animazione:",
+          "code": "current_frame = 0\nanimation_timer = 0\n\n# Nel game loop\nanimation_timer += 1\nif animation_timer > 5:  # Ogni 5 frame\n    current_frame = (current_frame + 1) % 3\n    animation_timer = 0\n\nscreen.blit(frames[current_frame], (x, y))"
+        },
+        {
+          "type": "section",
+          "title": "5. Animare Solo Durante il Movimento",
+          "code": "if vel_x != 0 or vel_y != 0:  # Se in movimento\n    animation_timer += 1\n    if animation_timer > 5:\n        current_frame = (current_frame + 1) % 3\n        animation_timer = 0\nelse:  # Se fermo\n    current_frame = 0"
+        }
+      ]
+    },
+    {
+      "id": "collision",
+      "title": "💥 Collisioni",
+      "category": "Fisica",
+      "relatedLessons": [2],
+      "icon": "💥",
+      "shortDesc": "Rect, colliderect(), collision detection",
+      "content": [
+        {
+          "type": "section",
+          "title": "Cos'è un Rect?",
+          "text": "Un Rect (rettangolo) è un oggetto Pygame che rappresenta un'area rettangolare con posizione (x, y) e dimensioni (larghezza, altezza)."
+        },
+        {
+          "type": "section",
+          "title": "1. Creare un Rect",
+          "code": "# Da un'immagine\nplayer_rect = player_img.get_rect()\n\n# Manualmente\nwall_rect = pygame.Rect(100, 150, 50, 100)"
+        },
+        {
+          "type": "section",
+          "title": "2. Aggiornare la Posizione di un Rect",
+          "code": "# Imposta posizione angolo alto-sinistro\nplayer_rect.topleft = (player_x, player_y)\n\n# Oppure imposta il centro\nplayer_rect.center = (300, 200)",
+          "text": "Altri attributi utili:",
+          "list": [
+            "rect.x, rect.y - Posizione angolo alto-sx",
+            "rect.center - Centro del rettangolo",
+            "rect.topleft, rect.topright - Angoli",
+            "rect.width, rect.height - Dimensioni"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "3. Rilevare Collisione tra Due Rect",
+          "code": "if player_rect.colliderect(wall_rect):\n    print(\"Collisione!\")",
+          "highlight": "colliderect() restituisce True se i due rettangoli si sovrappongono."
+        },
+        {
+          "type": "section",
+          "title": "4. Collisione con Lista di Rect",
+          "code": "walls = [\n    pygame.Rect(100, 100, 50, 50),\n    pygame.Rect(200, 150, 50, 50),\n    pygame.Rect(300, 200, 50, 50)\n]\n\nfor wall in walls:\n    if player_rect.colliderect(wall):\n        print(\"Hai colpito un muro!\")"
+        }
+      ]
+    },
+    {
+      "id": "transform",
+      "title": "🔄 Trasformazioni",
+      "category": "Grafica",
+      "relatedLessons": [2],
+      "icon": "🔄",
+      "shortDesc": "rotate(), flip(), scale()",
+      "content": [
+        {
+          "type": "section",
+          "title": "Cosa sono le Trasformazioni?",
+          "text": "Le trasformazioni ti permettono di modificare un'immagine: ruotarla, specchiarla o ridimensionarla."
+        },
+        {
+          "type": "section",
+          "title": "1. Ruotare un'Immagine",
+          "code": "img_ruotata = pygame.transform.rotate(img_originale, angolo)",
+          "text": "L'angolo è in gradi e ruota in senso antiorario:",
+          "list": [
+            "0° = Nessuna rotazione",
+            "90° = Ruotato a sinistra (verso l'alto)",
+            "180° = Capovolto",
+            "270° = Ruotato a destra (verso il basso)"
+          ],
+          "example": "# Pac-Man che guarda in su\npacman_su = pygame.transform.rotate(pacman_img, 90)"
+        },
+        {
+          "type": "section",
+          "title": "2. Specchiare un'Immagine",
+          "code": "img_specchiata = pygame.transform.flip(img_originale, flip_x, flip_y)",
+          "text": "Parametri booleani:",
+          "list": [
+            "flip_x = True - Specchia orizzontalmente",
+            "flip_y = True - Specchia verticalmente"
+          ],
+          "example": "# Pac-Man che guarda a sinistra\npacman_sx = pygame.transform.flip(pacman_img, True, False)"
+        },
+        {
+          "type": "section",
+          "title": "3. Ridimensionare un'Immagine",
+          "code": "img_ridimensionata = pygame.transform.scale(img_originale, (nuova_larghezza, nuova_altezza))",
+          "example": "# Raddoppia le dimensioni\nimg_grande = pygame.transform.scale(img, (img.get_width()*2, img.get_height()*2))"
+        },
+        {
+          "type": "section",
+          "title": "⚠️ Nota Importante",
+          "text": "Le trasformazioni creano NUOVE immagini. Non trasformare continuamente nel game loop!",
+          "code": "# ✅ CORRETTO\nimg_ruotata = pygame.transform.rotate(img_originale, 90)\nwhile running:\n    screen.blit(img_ruotata, (x, y))\n\n# ❌ SBAGLIATO (troppo lento)\nwhile running:\n    img = pygame.transform.rotate(img_originale, 90)\n    screen.blit(img, (x, y))"
+        }
+      ]
+    },
+    {
+      "id": "matrices",
+      "title": "📊 Matrici e Griglie",
+      "category": "Strutture Dati",
+      "relatedLessons": [3],
+      "icon": "📊",
+      "shortDesc": "Liste 2D, maze, level design",
+      "content": [
+        {
+          "type": "section",
+          "title": "Cos'è una Matrice 2D?",
+          "text": "Una matrice è una lista di liste! Perfetta per rappresentare una griglia come un labirinto, una mappa o un livello di gioco.",
+          "code": "maze = [\n    [1, 1, 1, 1, 1],\n    [1, 0, 0, 0, 1],\n    [1, 0, 1, 0, 1],\n    [1, 0, 0, 0, 1],\n    [1, 1, 1, 1, 1]\n]",
+          "note": "0 = cella vuota, 1 = muro"
+        },
+        {
+          "type": "section",
+          "title": "Accedere agli Elementi",
+          "code": "# Accedi con maze[riga][colonna]\nvalore = maze[2][3]  # Riga 2, colonna 3\n\n# Modifica un valore\nmaze[1][1] = 2  # Cambia la cella in posizione (1,1)",
+          "highlight": "Ricorda: prima la riga (Y), poi la colonna (X)!"
+        },
+        {
+          "type": "section",
+          "title": "Iterare una Matrice",
+          "code": "for row in range(len(maze)):\n    for col in range(len(maze[row])):\n        valore = maze[row][col]\n        print(f\"Posizione ({row},{col}): {valore}\")"
+        },
+        {
+          "type": "section",
+          "title": "Calcolare Dimensione Celle",
+          "code": "CELL_SIZE = LARGHEZZA // len(maze[0])",
+          "text": "Divide la larghezza dello schermo per il numero di colonne per ottenere la dimensione di ogni cella in pixel."
+        },
+        {
+          "type": "section",
+          "title": "Disegnare una Griglia",
+          "code": "for row in range(len(maze)):\n    for col in range(len(maze[row])):\n        if maze[row][col] == 1:  # Se è un muro\n            x = col * CELL_SIZE\n            y = row * CELL_SIZE\n            pygame.draw.rect(screen, GRIGIO, (x, y, CELL_SIZE, CELL_SIZE))"
+        },
+        {
+          "type": "section",
+          "title": "Convertire Pixel in Griglia",
+          "code": "# Da coordinate pixel a coordinate griglia\ngrid_x = pixel_x // CELL_SIZE\ngrid_y = pixel_y // CELL_SIZE\n\n# Da coordinate griglia a coordinate pixel\npixel_x = grid_x * CELL_SIZE\npixel_y = grid_y * CELL_SIZE"
+        }
+      ]
+    },
+    {
+      "id": "pathfinding",
+      "title": "🧭 Pathfinding e IA",
+      "category": "Intelligenza Artificiale",
+      "relatedLessons": [3],
+      "icon": "🧭",
+      "shortDesc": "BFS, algoritmi ricerca percorso",
+      "content": [
+        {
+          "type": "section",
+          "title": "Cos'è il Pathfinding?",
+          "text": "Il pathfinding è l'algoritmo che permette a un personaggio (nemico, NPC) di trovare il percorso più breve da un punto A a un punto B, evitando ostacoli."
+        },
+        {
+          "type": "section",
+          "title": "BFS (Breadth-First Search)",
+          "text": "BFS è un algoritmo che esplora tutti i percorsi possibili livello per livello, garantendo di trovare il percorso più breve.",
+          "list": [
+            "Usa una coda (queue) per esplorare le celle",
+            "Tiene traccia delle celle visitate",
+            "Registra il \"parent\" di ogni cella per ricostruire il percorso",
+            "Esplora in tutte e 4 direzioni (su, giù, sinistra, destra)"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Implementazione BFS",
+          "code": "from collections import deque\n\ndef bfs_pathfinding(maze, start, goal):\n    queue = deque([start])\n    visited = {start}\n    parent = {}\n    \n    directions = [(0,1), (1,0), (0,-1), (-1,0)]  # destra, giù, sinistra, su\n    \n    while queue:\n        current = queue.popleft()\n        \n        if current == goal:\n            # Ricostruisci percorso\n            path = []\n            node = goal\n            while node in parent:\n                path.append(node)\n                node = parent[node]\n            path.append(start)\n            path.reverse()\n            return path\n        \n        cy, cx = current\n        for dy, dx in directions:\n            ny, nx = cy + dy, cx + dx\n            neighbor = (ny, nx)\n            \n            if (0 <= ny < len(maze) and \n                0 <= nx < len(maze[0]) and\n                maze[ny][nx] == 0 and \n                neighbor not in visited):\n                \n                visited.add(neighbor)\n                parent[neighbor] = current\n                queue.append(neighbor)\n    \n    return []  # Nessun percorso trovato"
+        },
+        {
+          "type": "section",
+          "title": "Usare il Percorso",
+          "code": "# Trova il percorso\nplayer_pos = (player_y // CELL_SIZE, player_x // CELL_SIZE)\nghost_pos = (ghost_y // CELL_SIZE, ghost_x // CELL_SIZE)\npath = bfs_pathfinding(maze, ghost_pos, player_pos)\n\n# Muovi verso la prossima cella\nif len(path) > 1:\n    next_cell = path[1]  # path[0] è la posizione corrente\n    target_x = next_cell[1] * CELL_SIZE\n    target_y = next_cell[0] * CELL_SIZE\n    \n    # Muovi gradualmente verso il target\n    if ghost_x < target_x:\n        ghost_x += ghost_speed\n    elif ghost_x > target_x:\n        ghost_x -= ghost_speed"
+        }
+      ]
+    },
+    {
+      "id": "game-systems",
+      "title": "❤️ Sistemi di Gioco",
+      "category": "Game Design",
+      "relatedLessons": [3],
+      "icon": "❤️",
+      "shortDesc": "Vite, punteggio, power-up, game over",
+      "content": [
+        {
+          "type": "section",
+          "title": "Sistema Vite",
+          "code": "lives = 3\n\n# Quando il giocatore subisce danno\nif collisione_con_nemico:\n    lives -= 1\n    if lives > 0:\n        # Respawn\n        player_x = START_X\n        player_y = START_Y\n    else:\n        game_over = True"
+        },
+        {
+          "type": "section",
+          "title": "Invincibilità Temporanea",
+          "text": "Dopo il respawn, rendi il giocatore invincibile per qualche secondo:",
+          "code": "invincible = False\ninvincible_timer = 0\n\n# Dopo respawn\nif lives > 0:\n    invincible = True\n    invincible_timer = 0\n\n# Nel game loop\nif invincible:\n    invincible_timer += 1\n    if invincible_timer > 120:  # 2 secondi a 60 FPS\n        invincible = False\n\n# Controlla collisioni solo se non invincibile\nif not invincible:\n    if collisione_con_nemico:\n        lives -= 1"
+        },
+        {
+          "type": "section",
+          "title": "Sistema Punteggio",
+          "code": "score = 0\n\n# Quando raccogli un oggetto\nif player_rect.colliderect(coin_rect):\n    score += 10\n    coins.remove(coin)\n\n# Disegna il punteggio\nfont = pygame.font.Font(None, 36)\nscore_text = font.render(f\"Score: {score}\", True, WHITE)\nscreen.blit(score_text, (10, 10))"
+        },
+        {
+          "type": "section",
+          "title": "Game Over e Restart",
+          "code": "game_over = False\n\nif game_over:\n    # Disegna schermata game over\n    overlay = pygame.Surface((WIDTH, HEIGHT))\n    overlay.set_alpha(180)\n    overlay.fill(BLACK)\n    screen.blit(overlay, (0, 0))\n    \n    go_text = font.render(\"GAME OVER!\", True, RED)\n    restart_text = small_font.render(\"Premi R per ricominciare\", True, WHITE)\n    screen.blit(go_text, (WIDTH//2 - 100, HEIGHT//2 - 20))\n    screen.blit(restart_text, (WIDTH//2 - 120, HEIGHT//2 + 20))\n    \n    # Controlla input restart\n    if event.type == pygame.KEYDOWN and event.key == pygame.K_r:\n        # Reset del gioco\n        lives = 3\n        score = 0\n        game_over = False"
+        }
+      ]
+    },
+    {
+      "id": "math-basics",
+      "title": "🔢 Matematica per Giochi",
+      "category": "Matematica",
+      "relatedLessons": [3],
+      "icon": "🔢",
+      "shortDesc": "Distanza, divisione intera, modulo",
+      "content": [
+        {
+          "type": "section",
+          "title": "Divisione Intera (//)",
+          "text": "La divisione intera restituisce solo la parte intera, scartando i decimali:",
+          "code": "# Divisione normale\n10 / 3  # = 3.3333...\n\n# Divisione intera\n10 // 3  # = 3\n\n# Esempi pratici\n150 // 50  # = 3\n200 // 50  # = 4",
+          "note": "Perfetta per convertire pixel in coordinate griglia! pixel_x // CELL_SIZE = grid_x"
+        },
+        {
+          "type": "section",
+          "title": "Distanza tra Due Punti",
+          "text": "Per calcolare la distanza tra due coordinate (x1,y1) e (x2,y2):",
+          "code": "import math\n\n# Formula della distanza euclidea (Teorema di Pitagora)\ndist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)\n\n# Esempio: distanza tra player e nemico\nplayer_x, player_y = 100, 150\nenemy_x, enemy_y = 300, 250\n\ndistanza = math.sqrt((enemy_x - player_x)**2 + (enemy_y - player_y)**2)\nprint(f\"Distanza: {distanza} pixel\")",
+          "highlight": "Usa questa formula per rilevare collisioni circolari: if distanza < raggio1 + raggio2: collisione!"
+        },
+        {
+          "type": "section",
+          "title": "Distanza Manhattan (Più Veloce)",
+          "text": "Alternativa più veloce ma meno precisa:",
+          "code": "# Distanza Manhattan\nmanhattan = abs(x2 - x1) + abs(y2 - y1)\n\n# Esempio\ndist_manhattan = abs(300 - 100) + abs(250 - 150)\nprint(f\"Distanza Manhattan: {dist_manhattan}\")  # = 300",
+          "note": "Usa Manhattan quando hai tante entità e non serve precisione assoluta. È molto più veloce perché non calcola la radice quadrata!"
+        },
+        {
+          "type": "section",
+          "title": "Operatore Modulo (%)",
+          "text": "Il modulo restituisce il resto della divisione. Utilissimo per ciclare valori!",
+          "code": "# Ciclare tra 0, 1, 2\nframe = 0\nframe = (frame + 1) % 3  # 0 -> 1 -> 2 -> 0 -> 1 -> 2 ...\n\n# Altri esempi\n5 % 3   # = 2 (resto di 5/3)\n10 % 2  # = 0 (numero pari)\n11 % 2  # = 1 (numero dispari)\n7 % 4   # = 3",
+          "example": "# Animazione ciclica con modulo\ncurrent_frame = 0\nanimation_timer = 0\n\nwhile running:\n    animation_timer += 1\n    if animation_timer > 5:\n        current_frame = (current_frame + 1) % len(frames)\n        animation_timer = 0\n    \n    screen.blit(frames[current_frame], (x, y))"
+        },
+        {
+          "type": "section",
+          "title": "Operatore Potenza (**)",
+          "text": "Eleva un numero a potenza:",
+          "code": "# Potenza\n2 ** 3   # = 8 (2 elevato alla 3)\n5 ** 2   # = 25 (5 al quadrato)\n\n# Usato nella formula della distanza\n(x2 - x1) ** 2  # Eleva al quadrato la differenza",
+          "highlight": "** è l'operatore potenza in Python, equivalente a pow(base, esponente)"
+        },
+        {
+          "type": "section",
+          "title": "Funzioni Math Utili",
+          "list": [
+            "math.sqrt(x) - Radice quadrata",
+            "math.abs(x) oppure abs(x) - Valore assoluto",
+            "math.floor(x) - Arrotonda per difetto",
+            "math.ceil(x) - Arrotonda per eccesso",
+            "math.sin(x), math.cos(x) - Funzioni trigonometriche",
+            "math.radians(gradi) - Converte gradi in radianti",
+            "math.degrees(radianti) - Converte radianti in gradi"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-concepts",
+      "title": "🤖 Intelligenza Artificiale Base",
+      "category": "Intelligenza Artificiale",
+      "relatedLessons": [3],
+      "icon": "🤖",
+      "shortDesc": "Inseguimento, patrol, stati nemici",
+      "content": [
+        {
+          "type": "section",
+          "title": "Cos'è l'IA nei Videogiochi?",
+          "text": "L'Intelligenza Artificiale nei giochi controlla il comportamento dei nemici e NPC (personaggi non giocanti). Non deve essere perfetta, ma deve essere divertente e sfidante!"
+        },
+        {
+          "type": "section",
+          "title": "Tipi di Comportamenti IA",
+          "list": [
+            "Inseguimento (Chase) - Il nemico segue il giocatore",
+            "Pattuglia (Patrol) - Il nemico si muove su un percorso fisso",
+            "Fuga (Flee) - Il nemico scappa dal giocatore",
+            "Vagabondaggio (Wander) - Movimento casuale",
+            "Guardia (Guard) - Sta fermo fino a un evento"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Inseguimento Semplice (Naive Chase)",
+          "text": "Il nemico si muove direttamente verso il giocatore senza considerare ostacoli:",
+          "code": "# Calcola direzione verso il giocatore\nif ghost_x < player_x:\n    ghost_x += ghost_speed  # Vai a destra\nelif ghost_x > player_x:\n    ghost_x -= ghost_speed  # Vai a sinistra\n\nif ghost_y < player_y:\n    ghost_y += ghost_speed  # Vai giù\nelif ghost_y > player_y:\n    ghost_y -= ghost_speed  # Vai su",
+          "note": "⚠️ Problema: il nemico può attraversare i muri e resta bloccato negli angoli!"
+        },
+        {
+          "type": "section",
+          "title": "Inseguimento Intelligente con Pathfinding",
+          "text": "Usa BFS per trovare il percorso più breve evitando ostacoli:",
+          "code": "# Converti posizioni in coordinate griglia\nplayer_grid = (player_y // CELL_SIZE, player_x // CELL_SIZE)\nghost_grid = (ghost_y // CELL_SIZE, ghost_x // CELL_SIZE)\n\n# Trova il percorso\npath = bfs_pathfinding(maze, ghost_grid, player_grid)\n\n# Segui il percorso\nif len(path) > 1:\n    next_cell = path[1]  # path[0] è la posizione attuale\n    target_x = next_cell[1] * CELL_SIZE\n    target_y = next_cell[0] * CELL_SIZE\n    \n    # Muovi gradualmente verso il target\n    if ghost_x < target_x:\n        ghost_x += ghost_speed\n    elif ghost_x > target_x:\n        ghost_x -= ghost_speed\n    \n    if ghost_y < target_y:\n        ghost_y += ghost_speed\n    elif ghost_y > target_y:\n        ghost_y -= ghost_speed",
+          "highlight": "✅ Ora il nemico segue il percorso più breve evitando i muri!"
+        },
+        {
+          "type": "section",
+          "title": "Stati del Nemico (State Machine)",
+          "text": "I nemici possono avere diversi stati per comportamenti più complessi:",
+          "code": "# Definisci gli stati\nSTATE_PATROL = 0\nSTATE_CHASE = 1\nSTATE_FLEE = 2\nSTATE_DEAD = 3\n\nghost_state = STATE_PATROL\ndetection_range = 200  # Pixel\n\n# Nel game loop - cambia stato in base a condizioni\ndist_to_player = math.sqrt((player_x - ghost_x)**2 + (player_y - ghost_y)**2)\n\nif dist_to_player < detection_range:\n    ghost_state = STATE_CHASE  # Giocatore vicino -> insegui\nelif player_has_powerup:\n    ghost_state = STATE_FLEE  # Giocatore potenziato -> scappa\nelse:\n    ghost_state = STATE_PATROL  # Altrimenti -> pattuglia\n\n# Comportamento basato sullo stato\nif ghost_state == STATE_CHASE:\n    # Insegui il giocatore\n    path = bfs_pathfinding(maze, ghost_pos, player_pos)\n    # ... segui path\n    \nelif ghost_state == STATE_FLEE:\n    # Scappa dal giocatore (direzione opposta)\n    if ghost_x < player_x:\n        ghost_x -= ghost_speed  # Vai a sinistra\n    else:\n        ghost_x += ghost_speed  # Vai a destra\n        \nelif ghost_state == STATE_PATROL:\n    # Movimento su percorso fisso\n    # ... logica patrol",
+          "note": "Gli stati rendono i nemici più interessanti e prevedibili per il giocatore!"
+        },
+        {
+          "type": "section",
+          "title": "Pattuglia (Patrol)",
+          "text": "Il nemico si muove tra punti prefissati:",
+          "code": "# Punti di pattuglia\npatrol_points = [(100, 100), (400, 100), (400, 300), (100, 300)]\ncurrent_point = 0\n\n# Nel game loop\ntarget = patrol_points[current_point]\ntarget_x, target_y = target\n\n# Muovi verso il punto\nif abs(ghost_x - target_x) < 5 and abs(ghost_y - target_y) < 5:\n    # Raggiunto il punto -> vai al prossimo\n    current_point = (current_point + 1) % len(patrol_points)\nelse:\n    # Muovi verso il punto\n    if ghost_x < target_x:\n        ghost_x += ghost_speed\n    elif ghost_x > target_x:\n        ghost_x -= ghost_speed\n    \n    if ghost_y < target_y:\n        ghost_y += ghost_speed\n    elif ghost_y > target_y:\n        ghost_y -= ghost_speed"
+        },
+        {
+          "type": "section",
+          "title": "Ottimizzazione: Non Calcolare Ogni Frame",
+          "text": "Il pathfinding è costoso! Calcola il percorso ogni N frame, non ogni singolo frame:",
+          "code": "pathfinding_timer = 0\nPATHFINDING_DELAY = 30  # Ricalcola ogni 30 frame (0.5 secondi a 60 FPS)\n\n# Nel game loop\npathfinding_timer += 1\n\nif pathfinding_timer >= PATHFINDING_DELAY:\n    # Ricalcola il percorso\n    path = bfs_pathfinding(maze, ghost_pos, player_pos)\n    pathfinding_timer = 0\n\n# Continua a seguire il vecchio percorso\nif len(path) > 1:\n    # ... muovi lungo path",
+          "highlight": "Questo migliora enormemente le performance con molti nemici!"
+        },
+        {
+          "type": "section",
+          "title": "Rendere l'IA Meno Perfetta",
+          "text": "Un'IA troppo perfetta non è divertente! Aggiungi imperfezioni:",
+          "list": [
+            "Velocità variabile - I nemici a volte rallentano o accelerano",
+            "Errori casuali - Ogni tanto prendono la direzione sbagliata",
+            "Tempo di reazione - Non reagiscono istantaneamente",
+            "Campo visivo limitato - Non vedono attraverso i muri",
+            "Pausa periodica - Si fermano a volte"
+          ],
+          "example": "import random\n\n# Aggiungi casualità\nif random.random() < 0.01:  # 1% di probabilità\n    # Fai un movimento casuale invece di inseguire\n    ghost_x += random.choice([-ghost_speed, ghost_speed])"
+        }
+      ]
+    }
+  ],
+  "categories": [
+    {"id": "base", "name": "Base", "icon": "🎮"},
+    {"id": "input", "name": "Input", "icon": "⌨️"},
+    {"id": "grafica", "name": "Grafica", "icon": "🎨"},
+    {"id": "fisica", "name": "Fisica", "icon": "💥"},
+    {"id": "strutture-dati", "name": "Strutture Dati", "icon": "📊"},
+    {"id": "matematica", "name": "Matematica", "icon": "🔢"},
+    {"id": "intelligenza-artificiale", "name": "Intelligenza Artificiale", "icon": "🧭"},
+    {"id": "game-design", "name": "Game Design", "icon": "❤️"}
+  ]
+}

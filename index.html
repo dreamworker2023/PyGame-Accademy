@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PyGame Academy - Portale</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+    color: #eee;
+    min-height: 100vh;
+}
+
+/* HEADER */
+.header {
+    background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 100%);
+    border-bottom: 3px solid #4caf50;
+    padding: 20px 40px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-icon {
+    font-size: 2.5em;
+}
+
+.logo-text h1 {
+    color: #4caf50;
+    font-size: 1.8em;
+}
+
+.logo-text p {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.user-stats {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 10px 20px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    border: 2px solid #333;
+}
+
+.stat-label {
+    color: #888;
+    font-size: 0.8em;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    color: #4caf50;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+/* CONTAINER */
+.container {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+/* LEZIONI */
+.lessons-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.section-title {
+    font-size: 1.5em;
+    color: #4caf50;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lesson-card {
+    background: #2a2a2a;
+    border-radius: 12px;
+    padding: 25px;
+    border: 2px solid #333;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.lesson-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.lesson-card.completed {
+    border-color: #4caf50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+}
+
+.lesson-card.unlocked:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+    border-color: #4caf50;
+}
+
+.lesson-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.lesson-number {
+    font-size: 3em;
+    color: #333;
+    font-weight: bold;
+    opacity: 0.3;
+}
+
+.lesson-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9em;
+}
+
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.85em;
+}
+
+.status-badge.locked {
+    background: #555;
+    color: #888;
+}
+
+.status-badge.unlocked {
+    background: #2196f3;
+    color: white;
+}
+
+.status-badge.completed {
+    background: #4caf50;
+    color: white;
+}
+
+.lesson-title {
+    font-size: 1.3em;
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.lesson-description {
+    color: #aaa;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.lesson-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.topic-tag {
+    background: #1a1a1a;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    color: #4caf50;
+    border: 1px solid #333;
+}
+
+.lesson-button {
+    background: #4caf50;
+    color: #000;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1em;
+}
+
+.lesson-button:hover {
+    background: #45a049;
+    transform: scale(1.05);
+}
+
+.lesson-button:disabled {
+    background: #555;
+    color: #888;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* SIDEBAR */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sidebar-card {
+    background: #2a2a2a;
+    border-radius: 12px;
+    padding: 20px;
+    border: 2px solid #333;
+}
+
+.sidebar-card h3 {
+    color: #4caf50;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.manual-link {
+    display: block;
+    padding: 12px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    color: #fff;
+    text-decoration: none;
+    border: 1px solid #333;
+    transition: all 0.3s;
+}
+
+.manual-link:hover {
+    background: #2a2a2a;
+    border-color: #4caf50;
+    transform: translateX(5px);
+}
+
+.manual-link-title {
+    font-weight: bold;
+    color: #4caf50;
+    margin-bottom: 5px;
+}
+
+.manual-link-desc {
+    font-size: 0.85em;
+    color: #888;
+}
+
+/* PROGRESS RING */
+.progress-ring-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.progress-ring {
+    width: 120px;
+    height: 120px;
+    position: relative;
+}
+
+.progress-ring svg {
+    transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+    fill: none;
+    stroke: #333;
+    stroke-width: 8;
+}
+
+.progress-ring-progress {
+    fill: none;
+    stroke: #4caf50;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #4caf50;
+}
+
+.progress-label {
+    margin-top: 10px;
+    color: #888;
+    font-size: 0.9em;
+}
+
+/* TIPS CARD */
+.tip-card {
+    background: linear-gradient(135deg, #1a4d2e 0%, #2d5f3f 100%);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #4caf50;
+}
+
+.tip-title {
+    color: #4caf50;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.tip-text {
+    color: #ccc;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+/* MODAL MANUALE */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    padding: 40px;
+}
+
+.modal-content {
+    background: #2a2a2a;
+    border-radius: 12px;
+    max-width: 900px;
+    max-height: 90vh;
+    margin: 0 auto;
+    overflow-y: auto;
+    border: 2px solid #4caf50;
+}
+
+.modal-header {
+    background: #1a1a1a;
+    padding: 20px 30px;
+    border-bottom: 2px solid #4caf50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.modal-header h2 {
+    color: #4caf50;
+}
+
+.close-btn {
+    background: #ff5252;
+    border: none;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.close-btn:hover {
+    background: #ff1744;
+}
+
+.modal-body {
+    padding: 30px;
+}
+
+.manual-section {
+    margin-bottom: 30px;
+}
+
+.manual-section h3 {
+    color: #4caf50;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #333;
+}
+
+.code-block {
+    background: #000;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    font-family: 'Consolas', monospace;
+    color: #9cdcfe;
+    margin: 10px 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.code-comment {
+    color: #6a9955;
+}
+
+.manual-section p {
+    color: #ccc;
+    line-height: 1.8;
+    margin-bottom: 10px;
+}
+
+.manual-section ul {
+    color: #ccc;
+    margin-left: 20px;
+    line-height: 1.8;
+}
+
+.highlight {
+    background: #1a4d2e;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #4caf50;
+    font-family: 'Consolas', monospace;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-content">
+        <div class="logo">
+            <div class="logo-icon">🎮</div>
+            <div class="logo-text">
+                <h1>PyGame Academy</h1>
+                <p>Impara Python creando giochi</p>
+            </div>
+        </div>
+        <div class="user-stats">
+            <div class="stat-box">
+                <div class="stat-label">Lezioni</div>
+                <div class="stat-value" id="completedLessons">0/0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Progressione</div>
+                <div class="stat-value" id="totalProgress">0%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONTAINER -->
+<div class="container">
+    <!-- SEZIONE LEZIONI -->
+    <div class="lessons-section">
+        <h2 class="section-title">📚 Percorso di Apprendimento</h2>
+        <div id="lessonsContainer">
+            <!-- Le lezioni saranno generate da JavaScript -->
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <!-- PROGRESS CARD -->
+        <div class="sidebar-card">
+            <h3>📊 Il Tuo Progresso</h3>
+            <div class="progress-ring-container">
+                <div class="progress-ring">
+                    <svg width="120" height="120">
+                        <circle class="progress-ring-circle" cx="60" cy="60" r="52"></circle>
+                        <circle class="progress-ring-progress" cx="60" cy="60" r="52" 
+                                id="progressCircle"
+                                stroke-dasharray="326.73" 
+                                stroke-dashoffset="326.73"></circle>
+                    </svg>
+                    <div class="progress-text" id="progressPercent">0%</div>
+                </div>
+                <div class="progress-label">Completamento Totale</div>
+            </div>
+        </div>
+
+                <!-- MANUALE CARD -->
+        <div class="sidebar-card">
+            <h3>📖 Manuale di Riferimento</h3>
+            <div id="manualLinksContainer">
+                <!-- I link del manuale saranno generati da JavaScript -->
+            </div>
+        </div>
+
+        <!-- TIPS CARD -->
+        <div class="sidebar-card">
+            <h3>💡 Suggerimento del Giorno</h3>
+            <div class="tip-card">
+                <div class="tip-title">Debug con print()</div>
+                <div class="tip-text">
+                    Quando il tuo gioco non funziona come ti aspetti, usa <span class="highlight">print(variabile)</span> per vedere i valori in tempo reale nella console!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MANUALE -->
+<div class="modal" id="manualModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Manuale PyGame</h2>
+            <button class="close-btn" onclick="closeManual()">✕ Chiudi</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Contenuto dinamico -->
+        </div>
+    </div>
+</div>
+
+
+<script src="portal_script.js">
+
+</script>
+</body>
+</html>
