@@ -1,10 +1,3 @@
-È il momento perfetto per crearlo! Per un repository come **PyGame-Accademy**, il README deve essere non solo descrittivo, ma anche visivo e invitante per gli studenti.
-
-Ecco una struttura professionale in Markdown che puoi copiare e incollare nel file `README.md` del repository.
-
----
-
-```markdown
 # 🐍 PyGame Accademy 🎮
 
 Benvenuti nella **PyGame Accademy**, un percorso didattico strutturato per imparare la programmazione **Python** attraverso lo sviluppo di videogame 2D. 
@@ -74,16 +67,4 @@ Se questo materiale ti è stato utile per imparare o insegnare, lascia una **Ste
 
 🔗 **Torna all'Hub Didattico:** [dreamworker2023.github.io](https://www.google.com/search?q=https://dreamworker2023.github.io)
 
-```
 
----
-
-### Come caricarlo velocemente:
-1. Vai su [PyGame-Accademy](https://github.com/dreamworker2023/PyGame-Accademy).
-2. Se non vedi un tasto "Add README", clicca su **"Add file"** -> **"Create new file"**.
-3. Chiama il file `README.md` (tutto maiuscolo è lo standard).
-4. Incolla il testo sopra e clicca su **"Commit changes"**.
-
-Una volta fatto, il tuo repository apparirà subito più serio e "finito" agli occhi di chiunque lo visiti! Ti serve un aiuto simile anche per gli altri repository di elettronica?
-
-```
